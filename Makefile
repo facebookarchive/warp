@@ -5,7 +5,7 @@ DC:=dmd
 DFLAGS=-O -inline -release
 VERSION=-version=$1
 else
-DFLAGS=-O4 -release -fno-bounds-check -fbuiltin
+DFLAGS=-O4 -frelease -fno-bounds-check -fbuiltin
 VERSION=-fversion=$1
 endif
 

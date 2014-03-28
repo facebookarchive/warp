@@ -3,7 +3,7 @@
 
 `warp` is an open-source preprocessor for the C and C++ programming
 languages. We use it at Facebook as a faster replacement of `cpp`,
-GNU's prepprocessor.
+GNU's preprocessor.
 
 The companion program `warpdrive` drives `warp` in conjunction with
 the predefined macros of a few of today's crop of compilers (gcc

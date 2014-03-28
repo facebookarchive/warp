@@ -31,7 +31,7 @@ compilers.
 
 To build warp, use the simple Makefile that's part of the distribution:
 
-    make
+    make -j
 
 This will produce `warp` (the core program) and also the drivers
 `warpdrive_gcc4_7_1`, `warpdrive_gcc4_8_1`, `warpdrive_clang3_2`,

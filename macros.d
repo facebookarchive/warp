@@ -162,7 +162,7 @@ ustring macroReplacementList(R)(ref R text, bool objectLike, ustring[] parameter
                      */
                     text = text.skipWhitespace();
                     StaticArrayBuffer!(uchar, 1024) id = void;
-                    id.init();
+                    id.initialize();
                     text = text.inIdentifier(id);
                     auto argi = countUntil(parameters, id[]);
                     if (argi == -1)
@@ -183,7 +183,7 @@ ustring macroReplacementList(R)(ref R text, bool objectLike, ustring[] parameter
                     if (parameters.length)
                     {
                         StaticArrayBuffer!(uchar, 1024) id = void;
-                        id.init();
+                        id.initialize();
                         id.put(c);
                         text = text.inIdentifier(id);
                         auto argi = countUntil(parameters, id[]);
@@ -1525,42 +1525,42 @@ unittest
 {
     StaticArrayBuffer!(uchar, 1024) buf = void;
 
-    buf.init();
+    buf.initialize();
     auto s = cast(ustring)"";
     buf.writePreprocessedLine(s);
     assert(buf[] == "\n");
 
-    buf.init();
+    buf.initialize();
     s = cast(ustring)"\r\na b\x07";
     buf.writePreprocessedLine(s);
 //writefln("|%s| %s", buf[], buf[].length);
     assert(buf[] == "a b\x07\n");
 
-    buf.init();
+    buf.initialize();
     s = cast(ustring)("" ~ ESC.brk ~ "");
     buf.writePreprocessedLine(s);
 //writefln("|%s| %s", buf[], buf[].length);
     assert(buf[] == "\n");
 
-    buf.init();
+    buf.initialize();
     s = cast(ustring)("" ~ ESC.brk ~ ESC.brk ~ ESC.brk ~ "");
     buf.writePreprocessedLine(s);
 //writefln("|%s| %s", buf[], buf[].length);
     assert(buf[] == "\n");
 
-    buf.init();
+    buf.initialize();
     s = cast(ustring)("a" ~ ESC.brk ~ ESC.brk ~ ESC.brk ~ "");
     buf.writePreprocessedLine(s);
 //writefln("|%s| %s", buf[], buf[].length);
     assert(buf[] == "a\n");
 
-    buf.init();
+    buf.initialize();
     s = cast(ustring)("a" ~ ESC.brk ~ ESC.brk ~ "b" ~ ESC.brk ~ "+");
     buf.writePreprocessedLine(s);
 //writefln("|%s| %s", buf[], buf[].length);
     assert(buf[] == "a b+\n");
 
-    buf.init();
+    buf.initialize();
     s = cast(ustring)("+" ~ ESC.brk ~ "+" ~ ESC.brk ~ "(");
     buf.writePreprocessedLine(s);
 //writefln("|%s| %s", buf[], buf[].length);

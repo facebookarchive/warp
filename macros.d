@@ -35,7 +35,7 @@ bool logging;
 immutable bool[256] tabIdentifierStart;
 static this()
 {
-    for (size_t u = 0; u < 0x100; ++u)
+    for (uint u = 0; u < 0x100; ++u)
     {
         tabIdentifierStart[u] = (isAlpha(u) || u == '_' || u == '$');
     }
@@ -64,7 +64,7 @@ unittest
 immutable bool[256] tabIdentifierChar;
 static this()
 {
-    for (size_t u = 0; u < 0x100; ++u)
+    for (uint u = 0; u < 0x100; ++u)
     {
         tabIdentifierChar[u] = (isAlphaNum(u) || u == '_' || u == '$');
     }

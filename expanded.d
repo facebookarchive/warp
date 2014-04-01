@@ -99,7 +99,7 @@ struct Expanded(R)
                 else if (linnum != lineNumber)
                 {
                     if (linnum == lineNumber + 1)
-                        lineBuffer.put('\n');
+                        foutr.put('\n');
                     else
                     {
                         if (lineNumber + 30 > linnum)

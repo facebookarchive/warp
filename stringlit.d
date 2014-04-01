@@ -221,31 +221,31 @@ unittest
 {
     StaticArrayBuffer!(char, 100) buf = void;
 
-    buf.init();
+    buf.initialize();
     auto r = `abc"`.lexStringLiteral(buf, '"', STR.s);
     assert(r.empty && buf[] == "abc");
 
-    buf.init();
+    buf.initialize();
     r = `\\\"\'\?\a\b\f\n\r\t\v"`.lexStringLiteral(buf, '"', STR.s);
     assert(r.empty && buf[] == "\\\"\'\?\a\b\f\n\r\t\v");
 
-    buf.init();
+    buf.initialize();
     r = `\0x\1773"`.lexStringLiteral(buf, '"', STR.s);
     assert(r.empty && buf[] == "\0x\1773");
 
-    buf.init();
+    buf.initialize();
     r = `\xa\xAFc"`.lexStringLiteral(buf, '"', STR.s);
 //writefln("|%s|", buf[]);
     assert(r.empty && buf[] == "\x0a\xafc");
 
-    buf.init();
+    buf.initialize();
     r = `\uabcdc"`.lexStringLiteral(buf, '"', STR.u);
     assert(r.empty && buf.length == 4 && buf[][0] == 0xCD &&
                                          buf[][1] == 0xAB &&
                                          buf[][2] == 'c'  &&
                                          buf[][3] == 0x00);
 
-    buf.init();
+    buf.initialize();
     r = `\U000DEF01c"`.lexStringLiteral(buf, '"', STR.U);
 //writef("%d:", buf.length);
 //foreach (c; 0..buf.length) writef(" %02x", buf[][c]);
@@ -269,7 +269,7 @@ R lexCharacterLiteral(R)(R r, ref ppint_t i, STR str)
     alias Unqual!(ElementEncodingType!R) E;
 
     StaticArrayBuffer!(E, 100) buf;
-    buf.init();
+    buf.initialize();
 
     r = r.lexStringLiteral(buf, '\'', str);
 

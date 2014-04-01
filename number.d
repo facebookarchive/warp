@@ -285,9 +285,9 @@ unittest
     string[] floats = ["1f", "5e+08", "1.4", "89.", "0xep+1", "1E9"];
     foreach (f; floats)
     {
-      f = f.lexNumber(number, isunsigned, isinteger);
-      assert(!isinteger);
-      assert(f.empty);
+        f = f.lexNumber(number, isunsigned, isinteger);
+        assert(!isinteger);
+        assert(f.empty);
     }
 }
 

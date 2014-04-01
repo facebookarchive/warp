@@ -18,7 +18,7 @@ import core.stdc.stdio;
 import macros : ESC;
 import main : err_fatal;
 import ranges;
-
+import macros;
 
 version (unittest)
 {
@@ -396,7 +396,7 @@ R inIdentifier(R, S)(R r, ref S s)
     while (!r.empty)
     {
         auto c = cast(ElementEncodingType!R)r.front;
-        if (isAlphaNum(c) || c == '_' || c == '$')
+        if (isIdentifierChar(c))
         {
             s.put(c);
         }

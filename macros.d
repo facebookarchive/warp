@@ -28,16 +28,55 @@ import textbuf;
 
 bool logging;
 
-bool isIdentifierStart(uchar c)
+/******************************************
+ * Characters that make up the start of an identifier.
+ */
+
+immutable bool[256] tabIdentifierStart =
+    iota(0, 0x100)
+    .map!(i => isAlpha(cast(dchar)i) || i == '_' || i == '$')
+    .array;
+
+bool isIdentifierStart(uchar c) pure
 {
-    return (c >= 'A' && c <= 'z' &&
-        (c >= 'a' || c <= 'Z' || c == '_'));
+    return tabIdentifierStart[c];
 }
 
-bool isIdentifierChar(uchar c)
+unittest
 {
-    return isAlphaNum(c) || c == '_';
+    /* Exhaustively test every char
+     */
+    for (uint u = 0; u < 0x100; ++u)
+    {
+        assert(isIdentifierStart(cast(uchar)u) == (isAlpha(u) || u == '_' || u == '$'));
+    }
 }
+
+
+/*******************************************
+ * Characters that make up the tail of an identifier.
+ */
+
+immutable bool[256] tabIdentifierChar =
+    iota(0, 0x100)
+    .map!(i => isAlphaNum(cast(dchar)i) || i == '_' || i == '$')
+    .array;
+
+bool isIdentifierChar(uchar c) pure
+{
+    return tabIdentifierChar[c];
+}
+
+unittest
+{
+    /* Exhaustively test every char
+     */
+    for (uint u = 0; u < 0x100; ++u)
+    {
+        assert(isIdentifierChar(cast(uchar)u) == (isAlphaNum(u) || u == '_' || u == '$'));
+    }
+}
+
 
 // Embedded escape sequence commands
 enum ESC : ubyte

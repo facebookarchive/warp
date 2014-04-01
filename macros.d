@@ -28,16 +28,63 @@ import textbuf;
 
 bool logging;
 
-bool isIdentifierStart(uchar c)
+/******************************************
+ * Characters that make up the start of an identifier.
+ */
+
+immutable bool[256] tabIdentifierStart;
+static this()
 {
-    return (c >= 'A' && c <= 'z' &&
-        (c >= 'a' || c <= 'Z' || c == '_'));
+    for (size_t u = 0; u < 0x100; ++u)
+    {
+        tabIdentifierStart[u] = (isAlpha(u) || u == '_' || u == '$');
+    }
 }
 
-bool isIdentifierChar(uchar c)
+bool isIdentifierStart(uchar c) pure
 {
-    return isAlphaNum(c) || c == '_';
+    return tabIdentifierStart[c];
 }
+
+unittest
+{
+    /* Exhaustively test every char
+     */
+    for (uint u = 0; u < 0x100; ++u)
+    {
+        assert(isIdentifierStart(cast(uchar)u) == (isAlpha(u) || u == '_' || u == '$'));
+    }
+}
+
+
+/*******************************************
+ * Characters that make up the tail of an identifier.
+ */
+
+immutable bool[256] tabIdentifierChar;
+static this()
+{
+    for (size_t u = 0; u < 0x100; ++u)
+    {
+        tabIdentifierChar[u] = (isAlphaNum(u) || u == '_' || u == '$');
+    }
+}
+
+bool isIdentifierChar(uchar c) pure
+{
+    return tabIdentifierChar[c];
+}
+
+unittest
+{
+    /* Exhaustively test every char
+     */
+    for (uint u = 0; u < 0x100; ++u)
+    {
+        assert(isIdentifierChar(cast(uchar)u) == (isAlphaNum(u) || u == '_' || u == '$'));
+    }
+}
+
 
 // Embedded escape sequence commands
 enum ESC : ubyte

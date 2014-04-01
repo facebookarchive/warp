@@ -34,15 +34,21 @@ struct EmptyInputRange(E)
 
 struct StaticArrayBuffer(E, size_t N)
 {
-    E[N] arr = void;
     size_t i;
+    E[N] arr = void;
 
-    void init() { i = 0; }
+    void initialize() { i = 0; }
 
     void put(E e)
     {
         arr[i] = e;
         ++i;
+    }
+
+    void put(E[] e)
+    {
+        arr[i .. i + e.length] = e[];
+        i += e.length;
     }
 
     E[] opSlice()
@@ -58,7 +64,7 @@ struct StaticArrayBuffer(E, size_t N)
 unittest
 {
     StaticArrayBuffer!(ubyte, 2) buf = void;
-    buf.init();
+    buf.initialize();
     buf.put('a');
     buf.put('b');
 //writefln("'%s'", buf.get());

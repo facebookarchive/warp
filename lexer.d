@@ -89,7 +89,7 @@ struct Lexer(R) if (isInputRange!R)
     R src;
 
     alias Unqual!(ElementEncodingType!R) E;
-    BitBucket!E bitbucket = void;
+    ranges.BitBucket!E bitbucket = void;
 
     //enum bool isContext = std.traits.hasMember!(R, "expanded");
     enum bool isContext = __traits(compiles, src.expanded);
@@ -517,7 +517,7 @@ struct Lexer(R) if (isInputRange!R)
                             src.expanded.off();
                         }
                     }
-                    idbuf.init();
+                    idbuf.initialize();
                     src = src.inIdentifier(idbuf);
                 Lident:
                     if (noMacroExpand)
@@ -695,7 +695,7 @@ struct Lexer(R) if (isInputRange!R)
                             src.expanded.off();
                         }
                     }
-                    idbuf.init();
+                    idbuf.initialize();
                     src = src.inIdentifier(idbuf);
                     if (!src.empty)
                     {

@@ -524,6 +524,17 @@ struct Context(R)
     }
 }
 
+
+/*************************************************
+ * Determine if range r is an instance of Context
+ */
+
+template isContext(R)
+{
+    enum bool isContext = __traits(hasMember, R, "stack");
+}
+
+
 /********************************************
  * Read a line of source from r and write it to the output range s.
  * Make sure line ends with \n

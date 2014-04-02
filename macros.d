@@ -1222,9 +1222,7 @@ private R macroScanArgument(R, T)(R r1, bool va_args, ref T outbuf)
 {
     alias Unqual!(ElementEncodingType!R) E;
 
-    enum bool isContext = __traits(compiles, r1.stack.prev);
-
-    static if (isContext)
+    static if (isContext!R)
     {
         auto loc = r1.loc();
 
@@ -1346,7 +1344,7 @@ private R macroScanArgument(R, T)(R r1, bool va_args, ref T outbuf)
         outbuf.put(cast(uchar)c);
         r.popFront();
     }
-    static if (isContext)
+    static if (isContext!R)
         err_fatal("premature end of macro argument from %s(%s)",
             loc.srcFile ? loc.srcFile.filename : "", loc.lineNumber);
     else

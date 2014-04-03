@@ -46,15 +46,15 @@ struct Context(R)
     const string[] paths;     // #include paths
     const size_t sysIndex;    // paths[sysIndex] is start of system #includes
 
-    bool errors;        // true if any errors occurred
-    __gshared uint counter;       // for __COUNTER__
+    private bool errors;        // true if any errors occurred
+    private __gshared uint counter;       // for __COUNTER__
 
     bool doDeps;        // true if doing dependency file generation
     string[] deps;      // dependency file contents
 
     SourceStack stack;
 
-    Source* psourceFile;
+    private Source* psourceFile;
 
     debug (ContextStats)
     {
@@ -159,6 +159,20 @@ struct Context(R)
 
         // Initialize source text
         pushFile(sf, false, -1);
+
+        if (auto s = currentSourceFile())
+        {
+            // Output a prolog the way gcc does (in particular
+            // contains directory information that may be helping gdb
+            // locate sources).
+            import std.file, std.format;
+            outrange.formattedWrite(
+                "# 1 \"%1$s\"\n"
+                "# 1 \"%2$s//\"\n"
+                "# 1 \"<command-line>\"\n"
+                "# 1 \"%1$s\"\n",
+                s.loc.srcFile.filename, getcwd);
+        }
     }
 
     void pushFile(SrcFile* sf, bool isSystem, int pathIndex)
@@ -815,5 +829,3 @@ unittest
     testPreprocess(params, "+abc2(3)+\n", "# 1 \"test.c\"\n+def=3=* +\n");
 //    exit(0);
 }
-
-

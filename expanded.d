@@ -21,16 +21,16 @@ import textbuf;
 
 struct Expanded(R)
 {
-    Context!R* ctx;
+    private Context!R* ctx;
 
     // Expanded output file
-    uchar[1000] tmpbuf2 = void;
-    Textbuf!(uchar,"exp") lineBuffer = void;
+    private uchar[1000] tmpbuf2 = void;
+    private Textbuf!(uchar,"exp") lineBuffer = void;
 
-    R* foutr;
+    private R* foutr;
 
-    int noexpand = 0;
-    int lineNumber = 1;                 // line number of expanded output
+    private int noexpand = 0;
+    private int lineNumber = 1;  // line number of expanded output
 
     void off() { ++noexpand; }
     void on()  { --noexpand; assert(noexpand >= 0); }
@@ -66,12 +66,11 @@ struct Expanded(R)
         }
     }
 
-    void put2()
+    private void put2()
     {
         if (lineBuffer[0] != '\n')
         {
-            auto s = ctx.currentSourceFile();
-            if (s)
+            if (auto s = ctx.currentSourceFile())
             {
                 auto linnum = s.loc.lineNumber - 1;
                 if (!ctx.lastloc.srcFile || ctx.lastloc.srcFile != s.loc.srcFile)

@@ -27,18 +27,18 @@ struct Textbuf(T, string id = null)
     {
         assert(!(buf.length & RESIZED));
         this.buf = buf.ptr;
-        this.buflen = cast(uint)buf.length;
+        this.buflen = cast(uint)buf.length - 2;   // 1 for storing past end, 1 for RESIZED
     }
 
     void put(T c)
     {
         const j = i;
+        buf[j] = c;
+        i = j + 1;
         if (j == buflen)
         {
             resize(j * 2 + 16);
         }
-        buf[j] = c;
-        i = j + 1;
     }
 
     static if (T.sizeof == 1)
@@ -62,7 +62,7 @@ struct Textbuf(T, string id = null)
     /******
      * Use this to retrieve the result.
      */
-    T[] opSlice(size_t lwr, size_t upr)
+    T[] opSlice(size_t lwr, size_t upr) pure
     {
         assert(lwr <= buflen);
         assert(upr <= buflen);
@@ -70,38 +70,38 @@ struct Textbuf(T, string id = null)
         return buf[lwr .. upr];
     }
 
-    T[] opSlice()
+    T[] opSlice() pure
     {
         assert(i <= buflen);
         return buf[0 .. i];
     }
 
-    T opIndex(size_t i)
+    T opIndex(size_t i) const pure
     {
         assert(i < buflen);
         return buf[i];
     }
 
-    void initialize() { i = 0; }
+    void initialize() pure { i = 0; }
 
-    T last()
+    T last() const pure
     {
         assert(i - 1 < buflen);
         return buf[i - 1];
     }
 
-    T pop()
+    T pop() pure
     {
         assert(i - 1 < buflen);
         return buf[--i];
     }
 
-    @property size_t length()
+    @property size_t length() const pure
     {
         return i;
     }
 
-    void setLength(size_t i)
+    void setLength(size_t i) pure
     {
         assert(i < buflen);
         this.i = cast(uint)i;
@@ -126,25 +126,25 @@ struct Textbuf(T, string id = null)
 
     void resize(size_t newsize)
     {
-        //writefln("%s: oldsize %s newsize %s", id, buf.length, newsize);
+        //writefln("%s: oldsize %s newsize %s %s", id, buflen, newsize, &this);
         void* p;
-        newsize |= RESIZED;
         if (buflen & RESIZED)
         {
             /* Prefer realloc when possible
              */
-            p = realloc(buf, newsize * T.sizeof);
+            p = realloc(buf, (newsize + 2) * T.sizeof);
             assert(p);
         }
         else
         {
-            p = malloc(newsize * T.sizeof);
+            assert(i < newsize + 2);
+            p = malloc((newsize + 2) * T.sizeof);
             assert(p);
             memcpy(p, buf, i * T.sizeof);
             debug(Textbuf) buf[0 .. buflen] = 0;
         }
         buf = cast(T*)p;
-        buflen = cast(uint)newsize;
+        buflen = cast(uint)newsize | RESIZED;
 
         /* Fake loop to prevent inlining. This function is called only rarely,
          * inlining results in poorer register allocation.
@@ -155,7 +155,7 @@ struct Textbuf(T, string id = null)
 
 unittest
 {
-    char[2] buf = void;
+    char[4] buf = void;
     auto textbuf = Textbuf!char(buf);
     textbuf.put('a');
     textbuf.put('x');

@@ -18,6 +18,7 @@ import core.stdc.stdio;
 import macros : ESC;
 import main : err_fatal;
 import ranges;
+import context;
 import macros;
 
 version (unittest)
@@ -70,25 +71,25 @@ R skipCComment(alias error = err_fatal, R)(R r) if (isInputRange!R)
 outer:
     for (;;)
     {
-        if (r.empty)
-            break;
-        for (;;)
-        {
-            if (r.front != '*')
-            {
-                // Short path
-                r.popFront();
-                break;
-            }
-            r.popFront();
-            if (r.empty)
-                break outer;
-            if (r.front == '/')
-            {
-                r.popFront();
-                return r;
-            }
-        }
+      if (r.empty)
+          break;
+      for (;;)
+      {
+          if (r.front != '*')
+          {
+              // Short path
+              r.popFront();
+              break;
+          }
+          r.popFront();
+          if (r.empty)
+              break outer;
+          if (r.front == '/')
+          {
+              r.popFront();
+              return r;
+          }
+      }
     }
     error("/* comment is not closed with */");
     assert(0);
@@ -241,7 +242,7 @@ R skipRawStringLiteral(alias error = err_fatal, R, S)(R r, ref S s)
                 }
                 else if (c == ' '  || c == '('  || c == ')'  ||
                          c == '\\' || c == '\t' || c == '\v' ||
-                         c == '\f' || c == '\n')
+                         c == '\f' || c == '\n' || c == '\r')
                 {
                     error("invalid dchar '%s'", c);
                     return r;
@@ -391,18 +392,64 @@ unittest
 
 
 R inIdentifier(R, S)(R r, ref S s)
-        if (isInputRange!R && isOutputRange!(S,ElementEncodingType!R))
+        if (isInputRange!R && isOutputRange!(S,Unqual!(ElementEncodingType!R)))
 {
-    while (!r.empty)
+    static if (isContext!R)
     {
-        auto c = cast(ElementEncodingType!R)r.front;
-        if (isIdentifierChar(c))
+        /* Take advantage of knowledge of Context to work with a bunch of
+         * characters at once rather than one at a time. Much faster.
+         */
+        while (1)
         {
-            s.put(c);
+            auto c = cast(ElementEncodingType!R)r.front;
+            if (isIdentifierChar(c))
+            {
+                s.put(c);
+                if (r.expanded.noexpand)
+                {
+                    auto a = r.lookAhead();
+                    size_t n;
+                    while (n < a.length)
+                    {
+                        if (isIdentifierChar(a[n]))
+                            ++n;
+                        else
+                            break;
+                    }
+                    if (n)
+                    {
+                        s.put(a[0 .. n]);
+                        r.popFrontN(n);
+                        if (n < a.length)
+                        {
+                            r.popFront();
+                            break;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                break;
+            }
+            r.popFront();
         }
-        else
-            break;
-        r.popFront();
+    }
+    else
+    {
+        while (!r.empty)
+        {
+            auto c = cast(ElementEncodingType!R)r.front;
+            if (isIdentifierChar(c))
+            {
+                s.put(c);
+            }
+            else
+            {
+                break;
+            }
+            r.popFront();
+        }
     }
     return r;
 }
@@ -467,6 +514,7 @@ R skipBlankLine(R)(R r) if (isInputRange!R)
             case '\t':
             case '\v':
             case '\f':
+            case '\r':
             case ESC.space:
             case ESC.brk:
                 continue;

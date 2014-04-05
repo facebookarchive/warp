@@ -158,15 +158,22 @@ struct Lexer(R) if (isInputRange!R)
 
         while (1)
         {
-            if (src.empty)
+            static if (!isContext)
             {
-                front = TOK.eof;
-                return;
+                if (src.empty)
+                {
+                    front = TOK.eof;
+                    return;
+                }
             }
 
             E c = cast(E)src.front;
             switch (c)
             {
+                case 0:
+                    front = TOK.eof;
+                    return;
+
                 case ' ':
                 case '\t':
                 case '\r':
@@ -543,8 +550,7 @@ struct Lexer(R) if (isInputRange!R)
                             if (m.flags & (Id.IDlinnum | Id.IDfile | Id.IDcounter))
                             {   // Predefined macro
                                 src.unget();
-                                auto p = src.predefined(m);
-                                src.push(p);
+                                src.pushPredefined(m);
                                 src.expanded.on();
                                 src.popFront();
                                 continue;
@@ -663,7 +669,10 @@ struct Lexer(R) if (isInputRange!R)
                                 src.push(ESC.brk);
                             }
 
-                            src.push(rs.empty ? cast(ustring)("" ~ ESC.space) : rs);
+                            if (rs.empty)
+                                src.push(ESC.space);
+                            else
+                                src.push(rs);
                             //src.push(rescanbuffer[]);
                             src.setExpanded();
                             src.expanded.on();

@@ -145,13 +145,14 @@ ustring macroReplacementList(R)(ref R text, bool objectLike, ustring[] parameter
                 text = text.skipStringLiteral(outbuf);
                 continue;
 
-             case 'R':
+            case 'R':
                 if (cast(E)text.front == '"')
                 {
                     text.popFront();
                     outbuf.put('R');
                     outbuf.put('"');
                     text = text.skipRawStringLiteral(outbuf);
+                    continue;
                 }
                 goto default;
 
@@ -248,7 +249,7 @@ ustring macroReplacementList(R)(ref R text, bool objectLike, ustring[] parameter
                                 outbuf.put(c2);
                             }
                             else
-                              break;
+                                break;
                         }
                     }
                     continue;
@@ -813,7 +814,7 @@ void macroExpand(Context, R)(const(uchar)[] text, ref R outbuf)
     r.popFront();
 
   Louter:
-    while (!r.empty)
+    while (1) //(!r.empty) // r.front returns 0 for end of input
     {
         auto c = r.front;
         switch (c)
@@ -974,8 +975,7 @@ void macroExpand(Context, R)(const(uchar)[] text, ref R outbuf)
                         {   // Predefined macro
                             outbuf.setLength(len);      // remove id from outbuf
                             r.unget();
-                            auto p = ctx.predefined(m);
-                            r.push(p);
+                            r.pushPredefined(m);
                             r.popFront();
                             continue;
                         }
@@ -1088,7 +1088,10 @@ void macroExpand(Context, R)(const(uchar)[] text, ref R outbuf)
                             r.push(ESC.brk);
                         }
 
-                        r.push(rs.empty ? cast(ustring)("" ~ ESC.space) : rs);
+                        if (rs.empty)
+                            r.push(ESC.space);
+                        else
+                            r.push(rs);
                         r.setExpanded();
                         r.push(ESC.brk);
                         r.popFront();
@@ -1224,7 +1227,7 @@ unittest
     ustring[16] tmpargsbuf = void;
     auto args = Textbuf!(ustring)(tmpargsbuf);
 
-    uchar[64] tmpargbuf = void;
+    uchar[68] tmpargbuf = void;
     auto argbuffer = Textbuf!uchar(tmpargbuf);
 
     args.initialize();
@@ -1257,57 +1260,64 @@ unittest
  *      r1 set past end of argument
  */
 
-private R macroScanArgument(R, T)(R r1, bool va_args, ref T outbuf)
+private R macroScanArgument(R, T)(R r1, bool va_args, ref T routbuf)
 {
     alias Unqual!(ElementEncodingType!R) E;
 
     static if (isContext!R)
     {
         auto loc = r1.loc();
-
-        static struct Chain
-        {
-            R r1;
-
-            @property bool empty()
-            {
-                bool b = r1.empty && r1.stack.prev && r1.stack.prev.empty;
-                return b;
-            }
-
-            @property E front()
-            {
-                E c = r1.empty && r1.stack.prev ? cast(E)r1.stack.prev.front : cast(E)r1.front;
-                return c;
-            }
-
-            void popFront()
-            {
-                if (r1.empty)
-                {
-                    if (r1.stack.prev)
-                        r1.stack.prev.popFront();
-                }
-                else
-                    r1.popFront();
-            }
-        }
-
-        Chain r;
-        r.r1 = r1;
     }
-    else
-        alias r1 r;
+    alias r1 r;
+
+    auto outbuf = routbuf;
 
     outbuf.put(0);
 
     int parens;
-  loop:
+  Loop:
     while (1)
     {
-        if (r.empty)
-            break;
-        auto c = r.front;
+        static if (isContext!R)
+        {
+            auto c = r.front;
+            if (c >= '0')
+            {
+                outbuf.put(cast(uchar)c);
+                if (r.expanded.noexpand)
+                {
+                    auto a = r.lookAhead();
+                    size_t n;
+                    while (n < a.length)
+                    {
+                        if (a[n] >= '0')
+                            ++n;
+                        else
+                            break;
+                    }
+                    if (n)
+                    {
+                        outbuf.put(a[0 .. n]);
+                        r.popFrontN(n);
+                    }
+                }
+                r.popFront();
+                continue;
+            }
+        }
+        else
+        {
+            if (r.empty)
+                break;
+            auto c = r.front;
+            //writefln("%s c = '%c', x%02x", isContext!R, cast(char)((c < ' ') ? '?' : c), c);
+            if (c >= '0')
+            {
+                outbuf.put(cast(uchar)c);
+                r.popFront();
+                continue;
+            }
+        }
         switch (c)
         {
             case '(':
@@ -1375,7 +1385,7 @@ private R macroScanArgument(R, T)(R r1, bool va_args, ref T outbuf)
                 break;
 
             case 0:
-              break loop;
+                break Loop;
 
             default:
                 break;
@@ -1385,12 +1395,13 @@ private R macroScanArgument(R, T)(R r1, bool va_args, ref T outbuf)
     }
     static if (isContext!R)
         err_fatal("premature end of macro argument from %s(%s)",
-            loc.srcFile ? loc.srcFile.filename : "", loc.lineNumber);
+                loc.srcFile ? loc.srcFile.filename : "", loc.lineNumber);
     else
         err_fatal("premature end of macro argument");
-    return r1;
 
   LendOfArg:
+    routbuf = outbuf;
+    //writefln("'%s'", cast(string)outbuf[]);
     return r1;
 }
 
@@ -1513,12 +1524,11 @@ void writePreprocessedLine(R)(ref R r, const(uchar)[] line) if (isOutputRange!(R
         {
             switch (c)
             {
-                case 0:
+                case '\n':
                     r.put('\n');
                     return;
 
                 case '\r':
-                case '\n':
                     break;      // ignore
 
                 default:
@@ -1533,13 +1543,13 @@ void writePreprocessedLine(R)(ref R r, const(uchar)[] line) if (isOutputRange!(R
                         break;
                     }
                     auto cprev = p[-1];
-                    uchar cnext;
+                    uchar cnext = void;
                     while (1)
                     {
-                        if (p[1] == 0)       // ignore if at end
-                            goto case 0;
+                        cnext = p[1];
+                        if (cnext == '\n')       // ignore if at end
+                            goto case '\n';
                         ++p;
-                        cnext = *p;
                         if (cnext != ESC.brk)   // treat multiple ESC.brk's as one
                             break;
                     }
@@ -1563,7 +1573,7 @@ unittest
     StaticArrayBuffer!(uchar, 1024) buf = void;
 
     buf.initialize();
-    auto s = cast(ustring)"";
+    auto s = cast(ustring)"\n";
     buf.writePreprocessedLine(s);
     assert(buf[] == "\n");
 
@@ -1571,34 +1581,34 @@ unittest
     s = cast(ustring)"\r\na b\x07";
     buf.writePreprocessedLine(s);
 //writefln("|%s| %s", buf[], buf[].length);
-    assert(buf[] == "a b\x07\n");
+    assert(buf[] == "\n");
 
     buf.initialize();
-    s = cast(ustring)("" ~ ESC.brk ~ "");
+    s = cast(ustring)("" ~ ESC.brk ~ "\n");
     buf.writePreprocessedLine(s);
 //writefln("|%s| %s", buf[], buf[].length);
     assert(buf[] == "\n");
 
     buf.initialize();
-    s = cast(ustring)("" ~ ESC.brk ~ ESC.brk ~ ESC.brk ~ "");
+    s = cast(ustring)("" ~ ESC.brk ~ ESC.brk ~ ESC.brk ~ "\n");
     buf.writePreprocessedLine(s);
 //writefln("|%s| %s", buf[], buf[].length);
     assert(buf[] == "\n");
 
     buf.initialize();
-    s = cast(ustring)("a" ~ ESC.brk ~ ESC.brk ~ ESC.brk ~ "");
+    s = cast(ustring)("a" ~ ESC.brk ~ ESC.brk ~ ESC.brk ~ "\n");
     buf.writePreprocessedLine(s);
 //writefln("|%s| %s", buf[], buf[].length);
     assert(buf[] == "a\n");
 
     buf.initialize();
-    s = cast(ustring)("a" ~ ESC.brk ~ ESC.brk ~ "b" ~ ESC.brk ~ "+");
+    s = cast(ustring)("a" ~ ESC.brk ~ ESC.brk ~ "b" ~ ESC.brk ~ "+\n");
     buf.writePreprocessedLine(s);
 //writefln("|%s| %s", buf[], buf[].length);
     assert(buf[] == "a b+\n");
 
     buf.initialize();
-    s = cast(ustring)("+" ~ ESC.brk ~ "+" ~ ESC.brk ~ "(");
+    s = cast(ustring)("+" ~ ESC.brk ~ "+" ~ ESC.brk ~ "(\n");
     buf.writePreprocessedLine(s);
 //writefln("|%s| %s", buf[], buf[].length);
     assert(buf[] == "+ +(\n");

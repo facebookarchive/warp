@@ -145,7 +145,7 @@ unittest
     assert(!r.empty && r.front == 'x');
 
     StaticArrayBuffer!(char,100) a = void;
-    a.init();
+    a.initialize();
 
     r = "asdf\\'a'b".skipCharacterLiteral(a);
     assert(!r.empty && r.front == 'b');
@@ -197,7 +197,7 @@ unittest
     assert(!r.empty && r.front == 'x');
 
     StaticArrayBuffer!(char,100) a = void;
-    a.init();
+    a.initialize();
 
     r = "asdf\\\"a\"b".skipStringLiteral(a);
     assert(!r.empty && r.front == 'b');
@@ -301,13 +301,13 @@ R skipRawStringLiteral(alias error = err_fatal, R, S)(R r, ref S s)
 unittest
 {
     StaticArrayBuffer!(char,100) a = void;
-    a.init();
+    a.initialize();
 
     auto r = "a(bcd\")b\")a\"e".skipRawStringLiteral(a);
     assert(!r.empty && r.front == 'e');
     assert(a[] == "a(bcd\")b\")a\"");
 
-    a.init();
+    a.initialize();
     r = "(([^\\s]*)\\s+(.*))\"e".skipRawStringLiteral(a);
     assert(!r.empty && r.front == 'e');
     assert(a[] == "(([^\\s]*)\\s+(.*))\"");
@@ -411,13 +411,13 @@ unittest
 {
   {
     StaticArrayBuffer!(char, 1024) id = void;
-    id.init();
+    id.initialize();
     auto r = "abZ123_ 3".inIdentifier(id);
     assert(!r.empty && r.front == ' ' && id[] == "abZ123_");
   }
   {
     StaticArrayBuffer!(ubyte, 1024) id = void;
-    id.init();
+    id.initialize();
     auto r = (cast(immutable(ubyte)[])"abZ123_ 3").inIdentifier(id);
     assert(!r.empty && r.front == ' ' && id[] == "abZ123_");
   }
@@ -526,3 +526,4 @@ unittest
     r2 = s2.skipBlankLine();
     assert(r2.empty);
 }
+

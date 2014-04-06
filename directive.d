@@ -733,13 +733,7 @@ bool parseDirective(R)(ref R r)
                 }
 
                 // s is the new "source file"
-                auto srcfile = SrcFile.lookup(stringbuf[].idup);
-                stringbuf.free();
-                srcfile.contents = sf.loc.srcFile.contents;
-                srcfile.includeGuard = sf.loc.srcFile.includeGuard;
-                srcfile.once = sf.loc.srcFile.once;
-
-                sf.loc.srcFile = srcfile;
+                sf.loc.fileName = stringbuf[].idup;
 
                 if (linemarker)
                 {

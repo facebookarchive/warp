@@ -479,7 +479,7 @@ struct Context(R)
                 auto s = push();
                 s.lineBuffer.initialize();
                 s.lineBuffer.put('"');
-                s.lineBuffer.put(cast(ustring)loc.srcFile.filename);
+                s.lineBuffer.put(cast(ustring)loc.fileName);
                 s.lineBuffer.put('"');
                 s.ptext = s.lineBuffer[];
                 return;
@@ -705,6 +705,7 @@ struct Source
     {
         // set new file, set haven't seen tokens yet
         loc.srcFile = sf;
+        loc.fileName = sf.filename;
         loc.lineNumber = 0;
         loc.isSystem = isSystem;
         input = *sf.contents;

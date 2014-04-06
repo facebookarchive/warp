@@ -277,6 +277,21 @@ bool parseDirective(R)(ref R r)
             auto id = r.idbuf[];
             switch (cast(string)id)
             {
+                case "ident":
+                    /*
+                     * Support for old-style #ident, see
+                     * http://gcc.gnu.org/onlinedocs/cpp/Other-Directives.html. Skip
+                     * to end of line, outputting stuff verbatim.
+                     */
+                    do
+                    {
+                        r.popFront();
+                        if (r.empty)
+                            goto Ldefault;
+                    }
+                    while (r.front != TOK.eol);
+                    break;
+
                 case "line":
                     // #line directive
                     // Turn off expanded output so this line is not emitted

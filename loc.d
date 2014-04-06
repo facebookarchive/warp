@@ -20,6 +20,7 @@ import sources;
 struct Loc
 {
     SrcFile* srcFile;
+    string fileName;    // because #line may change the filename
     uint lineNumber;    // line number of current position
     bool isSystem;      // true if system file
 
@@ -28,7 +29,7 @@ struct Loc
      */
     void linemarker(R)(R r)
     {
-        r.formattedWrite("# %d \"%s\"", lineNumber - 1, srcFile.filename);
+        r.formattedWrite("# %d \"%s\"", lineNumber - 1, fileName);
         if (isSystem)
         {
             r.put(' ');
@@ -48,9 +49,9 @@ struct Loc
      */
     void write(File* f)
     {
-        //writefln("%s(%s) %s", srcFile ? srcFile.filename : "", lineNumber, isSystem);
+        //writefln("%s(%s) %s", fileName, lineNumber, isSystem);
         if (srcFile)
-            f.writef("%s(%d) : ", srcFile.filename, lineNumber);
+            f.writef("%s(%d) : ", fileName, lineNumber);
     }
 }
 

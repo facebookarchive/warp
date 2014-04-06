@@ -66,6 +66,7 @@ R dependencyFileFormat(R)(ref R r, string[] deps) if (isOutputRange!(R, char))
     return r;
 }
 
+
 unittest
 {
     string[] deps = ["asdfasdf.d", "kjjksdkfj.d", "asdkjfksdfj.d",
@@ -74,7 +75,7 @@ unittest
                 ];
 
     char[1000] buf;
-    Textbuf!char textbuf;
+    auto textbuf = Textbuf!char(buf);
 
     textbuf.dependencyFileFormat(deps);
     auto r = textbuf[0 .. textbuf.length];
@@ -101,6 +102,7 @@ asdkjfksdfj1.d:
 ");
     textbuf.free();
 }
+
 
 /*************************************
  * Write dependencies to filename.

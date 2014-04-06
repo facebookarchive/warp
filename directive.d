@@ -414,6 +414,7 @@ bool parseDirective(R)(ref R r)
                     auto m = Id.search(r.idbuf[]);
                     if (m)
                         m.flags &= ~(Id.IDmacro | Id.IDdotdotdot | Id.IDfunctionLike);
+
                     r.popFront();
                     if (r.front != TOK.eol)
                         err_fatal("end of line expected following #undef");
@@ -444,8 +445,12 @@ bool parseDirective(R)(ref R r)
 
                 case "if":
                 {
-                    if (auto csf = r.src.currentSourceFile())
+                    {
+                    auto csf = r.src.currentSourceFile();
+                    if (csf)
                         csf.seenTokens = true;
+                    }
+
                     // Turn off expanded output so this line is not emitted
                     r.src.expanded.off();
                     r.src.expanded.eraseLine();
@@ -473,8 +478,12 @@ bool parseDirective(R)(ref R r)
 
                 case "ifdef":
                 {
-                    if (auto csf = r.src.currentSourceFile())
+                    {
+                    auto csf = r.src.currentSourceFile();
+                    if (csf)
                         csf.seenTokens = true;
+                    }
+
                     // Turn off expanded output so this line is not emitted
                     r.src.expanded.off();
                     r.src.expanded.eraseLine();
@@ -724,13 +733,7 @@ bool parseDirective(R)(ref R r)
                 }
 
                 // s is the new "source file"
-                auto srcfile = SrcFile.lookup(stringbuf[].idup);
-                stringbuf.free();
-                srcfile.contents = sf.loc.srcFile.contents;
-                srcfile.includeGuard = sf.loc.srcFile.includeGuard;
-                srcfile.once = sf.loc.srcFile.once;
-
-                sf.loc.srcFile = srcfile;
+                sf.loc.fileName = stringbuf[].idup;
 
                 if (linemarker)
                 {
@@ -969,3 +972,4 @@ void includeFile(R)(R ctx, bool includeNext, bool sysstring, const(char)[] s,
     writeStatus(sf.cachedRead ? 'C' : ' ');
     ctx.pushFile(sf, sysstring, pathIndex);
 }
+

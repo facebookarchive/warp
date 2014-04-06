@@ -388,7 +388,18 @@ bool parseDirective(R)(ref R r)
                     if (!m)
                     {
                         auto csf = r.src.currentSourceFile();
-                        if (csf && !csf.loc.isSystem)
+                        if (csf && csf.loc.isSystem)
+                        {
+                            /* System macros can redefine without a #undef first,
+                             * so fake #undef and try again
+                             */
+                            m = Id.pool(macid);
+                            assert(m);
+                            m.flags &= ~(Id.IDmacro | Id.IDdotdotdot | Id.IDfunctionLike);
+                            m = Id.defineMacro(macid, parameters, text, flags);
+                            assert(m);
+                        }
+                        else
                             err_fatal("redefinition of macro %s", cast(string)macid);
                     }
                     r.src.expanded.on();

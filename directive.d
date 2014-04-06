@@ -895,6 +895,12 @@ void skipFalseCond(R)(ref R r)
                         r.src.ifstack.pop();
                         break;
 
+                    case "error":
+                    case "warning":
+                        // Don't tokenize, even though the Standard says so
+                        r.src.restOfLine();
+                        break;
+
                     default:
                         break;
                 }

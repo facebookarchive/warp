@@ -21,16 +21,15 @@ import textbuf;
 
 struct Expanded(R)
 {
-    Context!R* ctx;
-
-    // Expanded output file
-    uchar[1000] tmpbuf2 = void;
-    Textbuf!(uchar,"exp") lineBuffer = void;
-
-    R* foutr;
-
     int noexpand = 0;
     int lineNumber = 1;                 // line number of expanded output
+
+    Context!R* ctx;
+    R* foutr;
+
+    // Expanded output file
+    Textbuf!(uchar,"exp") lineBuffer = void;
+    uchar[1000] tmpbuf2 = void;
 
     void off() { ++noexpand; }
     void on()  { --noexpand; assert(noexpand >= 0); }
@@ -45,6 +44,7 @@ struct Expanded(R)
     {
         this.foutr = foutr;
         this.lineBuffer.initialize();
+        this.lineBuffer.put(0);
         this.noexpand = 0;
         this.lineNumber = 1;
     }
@@ -56,10 +56,10 @@ struct Expanded(R)
 
     void put(uchar c)
     {
-        //writefln("expanded.put('%c', %s)", c, noexpand);
+        //writefln("expanded.put(%02x '%s' %s)", c, cast(char)(c < ' ' ? '?' : c), noexpand);
         if (c != ESC.space && !noexpand)
         {
-            if (lineBuffer.length && lineBuffer.last() == '\n')
+            if (lineBuffer.last() == '\n')
                 put2();
             //writefln("lineBuffer.put('%c')", c);
             lineBuffer.put(c);
@@ -68,17 +68,17 @@ struct Expanded(R)
 
     void put2()
     {
-        if (lineBuffer[0] != '\n')
+        uchar c = lineBuffer[1];
+        if (c != '\n' && c != '\r')
         {
             auto s = ctx.currentSourceFile();
             if (s)
             {
                 auto linnum = s.loc.lineNumber - 1;
-                if (!ctx.lastloc.srcFile || ctx.lastloc.srcFile != s.loc.srcFile)
+                if (!ctx.lastloc.srcFile || ctx.lastloc.fileName !is s.loc.fileName)
                 {
                     if (ctx.uselastloc)
                     {
-//writeln("test1");
                         ctx.lastloc.linemarker(foutr);
                     }
                     else
@@ -91,45 +91,38 @@ struct Expanded(R)
                          * s.loc.lineNumber may be further ahead than just one.
                          * This, then, is a bug.
                          */
-//writeln("test2");
                         s.loc.linemarker(foutr);
                         ctx.lastloc = s.loc;
                     }
+                    lineNumber = linnum;
                 }
                 else if (linnum != lineNumber)
                 {
-                    if (linnum == lineNumber + 1)
-                        lineBuffer.put('\n');
+                    if (lineNumber + 30 > linnum)
+                    {
+                        foreach (i; lineNumber .. linnum)
+                            foutr.put('\n');
+                    }
                     else
                     {
-                        if (lineNumber + 30 > linnum)
-                        {
-                            foreach (i; lineNumber .. linnum)
-                                foutr.put('\n');
-                        }
-                        else
-                        {
-//writeln("test3");
-                            s.loc.linemarker(foutr);
-                        }
+                        s.loc.linemarker(foutr);
                     }
+                    lineNumber = linnum;
                 }
-                lineNumber = linnum;
             }
             else if (ctx.uselastloc && ctx.lastloc.srcFile)
             {
-//writeln("test4");
                 ctx.lastloc.linemarker(foutr);
             }
         }
         ctx.uselastloc = false;
-        lineBuffer.put(0);              // add sentinel
-        foutr.writePreprocessedLine(lineBuffer[]);
+        foutr.writePreprocessedLine(lineBuffer[1 .. lineBuffer.length]);
         lineBuffer.initialize();
+        lineBuffer.put(0);              // so its length is never 0
         ++lineNumber;
     }
 
-  void put(const(uchar)[] s)
+    void put(const(uchar)[] s)
     {
         //writefln("expanded.put('%s')", cast(string)s);
         /* This will always be an identifier string, so we can skip
@@ -151,7 +144,7 @@ struct Expanded(R)
      */
     void popBack()
     {
-        if (!noexpand && lineBuffer.length)
+        if (!noexpand && lineBuffer.length > 1)
             lineBuffer.pop();
     }
 
@@ -161,5 +154,8 @@ struct Expanded(R)
     void eraseLine()
     {
         lineBuffer.initialize();
+        lineBuffer.put(0);
     }
 }
+
+

@@ -46,8 +46,9 @@ struct Context(R)
     const string[] paths;     // #include paths
     const size_t sysIndex;    // paths[sysIndex] is start of system #includes
 
-    bool errors;        // true if any errors occurred
-    __gshared uint counter;       // for __COUNTER__
+    bool last;                // true if this is the last file presented on the command line
+    bool errors;              // true if any errors occurred
+    __gshared uint counter;   // for __COUNTER__
 
     bool doDeps;        // true if doing dependency file generation
     string[] deps;      // dependency file contents
@@ -169,7 +170,6 @@ struct Context(R)
         s.addFile(sf, isSystem, pathIndex);
         if (lastloc.srcFile)
             uselastloc = true;
-        assert(s.ptext);
     }
 
     /**********
@@ -253,11 +253,11 @@ struct Context(R)
     void popFront()
     {
         auto s = stack.psource;
-        auto c = *s.ptext;
-        if (c)
+        if (s.ptext.length)
         {
-            ++s.ptext;
+            auto c = s.ptext[0];
             stack.xc = c;
+            s.ptext = s.ptext[1 .. $];
             expanded.put(c);
         }
         else
@@ -269,8 +269,7 @@ struct Context(R)
         while (1)
         {
             auto s = stack.psource;
-            stack.xc = *s.ptext++;
-            if (stack.xc == 0)
+            if (s.ptext.length == 0)
             {
                 if (s.isFile && !s.input.empty)
                 {
@@ -284,17 +283,32 @@ struct Context(R)
                 stack.xc = stack.xc.init;
                 break;
             }
+            else
+            {
+                stack.xc = s.ptext[0];
+                s.ptext = s.ptext[1 .. $];
+            }
             expanded.put(stack.xc);
             break;
         }
     }
 
+    uchar[] lookAhead()
+    {
+        return stack.psource.ptext[];
+    }
+
+    void popFrontN(size_t n)
+    {
+        auto s = stack.psource;
+        s.ptext = s.ptext[n .. $];
+    }
+
     uchar[] restOfLine()
     {
         auto s = stack.psource;
-        auto len = strlen(cast(char*)s.ptext);
-        auto result = s.ptext[0 .. len];
-        s.ptext += len;
+        auto result = s.ptext[];
+        s.ptext = s.ptext[result.length .. result.length];
         stack.xc = '\n';
         return result;
     }
@@ -302,29 +316,28 @@ struct Context(R)
     void unget()
     {
         auto s = stack.psource;
-        if (s && s.ptext > s.lineBuffer[].ptr)
-        {
-            --s.ptext;
-            assert(*s.ptext == stack.xc);
-        }
+        if (s)
+            push(stack.xc);
     }
 
     void push(uchar c)
     {
         auto s = push();
-        s.lineBuffer.initialize();
-        s.lineBuffer.put(c);
-        s.lineBuffer.put(0);
-        s.ptext = s.lineBuffer[].ptr;
+        s.smallString[0] = c;
+        s.ptext = s.smallString[];
     }
 
     void push(const(uchar)[] str)
     {
-        auto s = push();
-        s.lineBuffer.initialize();
-        s.lineBuffer.put(str);
-        s.lineBuffer.put(0);
-        s.ptext = s.lineBuffer[].ptr;
+        if (str.length == 1)
+            push(str[0]);
+        else
+        {
+            auto s = push();
+            s.lineBuffer.initialize();
+            s.lineBuffer.put(str);
+            s.ptext = s.lineBuffer[0 .. str.length];
+        }
     }
 
     Source* currentSourceFile()
@@ -408,6 +421,9 @@ struct Context(R)
                 // Saw #endif and no tokens
                 s.loc.srcFile.includeGuard = s.includeGuard;
             }
+
+            if (last && (s.loc.srcFile.once /*|| s.loc.srcFile.includeGuard*/))
+                s.loc.srcFile.freeContents();   // won't need the contents anymore
         }
         stack.psource = stack.psource.prev;
         debug (ContextStats)
@@ -435,18 +451,20 @@ struct Context(R)
     void setExpanded() { stack.psource.isExpanded = true; }
 
     /***************************
-     * Return text associated with predefined macro.
+     * Push predefined macro text into input.
      */
-    ustring predefined(Id* m)
+    void pushPredefined(Id* m)
     {
         Loc loc;
+        {
         auto s = currentSourceFile();
         if (s)
             loc = s.loc;
         else
             loc = lastloc;
         if (!loc.srcFile)
-            return null;
+            return;
+        }
 
         uint n;
 
@@ -457,7 +475,15 @@ struct Context(R)
                 break;
 
             case Id.IDfile:
-                return cast(ustring)('"' ~ loc.srcFile.filename ~ '"');
+            {
+                auto s = push();
+                s.lineBuffer.initialize();
+                s.lineBuffer.put('"');
+                s.lineBuffer.put(cast(ustring)loc.fileName);
+                s.lineBuffer.put('"');
+                s.ptext = s.lineBuffer[];
+                return;
+            }
 
             case Id.IDcounter:
                 n = counter++;
@@ -466,11 +492,10 @@ struct Context(R)
             default:
                 assert(0);
         }
-        auto p = cast(uchar*)malloc(counter.sizeof * 3 + 1);
-        assert(p);
-        auto len = sprintf(cast(char*)p, "%u", n);
+        uchar[counter.sizeof * 3 + 1] buf;
+        auto len = sprintf(cast(char*)buf.ptr, "%u", n);
         assert(len > 0);
-        return cast(ustring)p[0 .. len];
+        push(cast(ustring)buf[0 .. len]);
     }
 
     /*******************************************
@@ -524,38 +549,14 @@ struct Context(R)
     }
 }
 
-/********************************************
- * Read a line of source from r and write it to the output range s.
- * Make sure line ends with \n
+
+/*************************************************
+ * Determine if range r is an instance of Context
  */
 
-R readSrcLine(R, S)(R r, ref S s)
-        if (isInputRange!R && isOutputRange!(S,ElementEncodingType!R))
+template isContext(R)
 {
-    alias Unqual!(ElementEncodingType!R) E;
-
-    auto p = r.ptr;
-    auto pend = r.ptr + r.length;
-
-    while (1)
-    {
-        if (p == pend)
-            break;
-        E c = *p++;
-        if (c == '\n')
-            break;
-/+
-        else if (c == 0)
-        {
-            --p;
-            break;
-        }
-+/
-        else if (c != '\r')
-            s.put(c);
-    }
-    s.put('\n');
-    return r[p - r.ptr .. $];
+    enum bool isContext = __traits(hasMember, R, "stack");
 }
 
 
@@ -607,11 +608,10 @@ struct SourceStack
     void popFront()
     {
         auto s = psource;
-        auto c = *s.ptext;
-        if (c)
+        if (s.ptext.length)
         {
-            xc = c;
-            ++s.ptext;
+            xc = s.ptext[0];
+            s.ptext = s.ptext[1 .. $];
         }
         else
             popFront2();
@@ -622,8 +622,12 @@ struct SourceStack
         while (1)
         {
             auto s = psource;
-            xc = *s.ptext++;
-            if (xc == 0)
+            if (s.ptext.length)
+            {
+                xc = s.ptext[0];
+                s.ptext = s.ptext[1 .. $];
+            }
+            else
             {
                 if (s.isFile && !s.input.empty)
                 {
@@ -657,8 +661,9 @@ struct Source
 {
     Textbuf!(uchar,"src") lineBuffer = void;
 
-    uchar* ptext;
+    uchar[] ptext;
 
+    uchar[1] smallString; // for 1 character buffers
     bool isFile;        // if it is a file
     bool isExpanded;    // true if already macro expanded
     bool seenTokens;    // true if seen tokens
@@ -700,9 +705,10 @@ struct Source
     {
         // set new file, set haven't seen tokens yet
         loc.srcFile = sf;
+        loc.fileName = sf.filename;
         loc.lineNumber = 0;
         loc.isSystem = isSystem;
-        input = sf.contents;
+        input = *sf.contents;
         isFile = true;
         includeGuard = null;
         this.pathIndex = pathIndex;
@@ -718,25 +724,68 @@ struct Source
     void readLine()
     {
         //writefln("Source.readLine() %d", loc.lineNumber);
-        lineBuffer.initialize();
+        if (!input.empty)
+        {
+            ++loc.lineNumber;
+
+            immutable(uchar)* p;
+            for (p = input.ptr; *p != '\n'; ++p)
+            {
+            }
+            auto len = p - input.ptr + 1;
+
+            if (p[-1] == '\\')
+            {
+                lineBuffer.initialize();
+                lineBuffer.put(input[0 .. len - 2]);
+                input = input[len .. $];
+            }
+            else if (p[-1] == '\r' && p[-2] == '\\')
+            {
+                lineBuffer.initialize();
+                lineBuffer.put(input[0 .. len - 3]);
+                input = input[len .. $];
+            }
+            else
+            {
+                ptext = cast(uchar[])input[0 .. len];
+                input = input[len .. $];
+                return;
+            }
+        }
 
         while (!input.empty)
         {
             ++loc.lineNumber;
-            input = input.readSrcLine(lineBuffer);
-            if (lineBuffer.length >= 2 &&
-                lineBuffer[lineBuffer.length - 2] == '\\')
+
+            auto p = input.ptr;
+            while (1)
             {
+                auto c = *p++;
+                if (c == '\n')
+                    break;
+            }
+            auto len = p - input.ptr;
+            lineBuffer.put(input[0 .. len]);
+            input = input[len .. $];
+
+            len = lineBuffer.length;
+            uchar c = void;
+            if (len >= 2 &&
+                ((c = lineBuffer[len - 2]) == '\\' ||
+                 (c == '\r' && len >= 3 && lineBuffer[len - 3] == '\\')))
+            {
+                if (c == '\r')
+                    lineBuffer.pop();
                 lineBuffer.pop();
                 lineBuffer.pop();
             }
             else
                 break;
         }
-        lineBuffer.put(0);              // add sentinel
-        ptext = lineBuffer[].ptr;
+        ptext = lineBuffer[];
 
-        assert(lineBuffer.length == 1 || lineBuffer[lineBuffer.length - 2] == '\n');
+        assert(lineBuffer.length == 0 || lineBuffer[lineBuffer.length - 1] == '\n');
         //writefln("\t%d", loc.lineNumber);
     }
 }
@@ -756,7 +805,7 @@ version (unittest)
 
         // Create a fake source file with contents
         auto sf = SrcFile.lookup("test.c");
-        sf.contents = cast(ustring)src;
+        sf.contents = cast(ustring*)&src;
 
         context.localStart(sf, &outbuf);
 

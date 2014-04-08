@@ -46,6 +46,7 @@ struct Context(R)
     const string[] paths;     // #include paths
     const size_t sysIndex;    // paths[sysIndex] is start of system #includes
 
+    bool last;                  // true if this is the last file presented on the command line
     private bool errors;        // true if any errors occurred
     private __gshared uint counter;       // for __COUNTER__
 
@@ -422,6 +423,8 @@ struct Context(R)
                 // Saw #endif and no tokens
                 s.loc.srcFile.includeGuard = s.includeGuard;
             }
+            if (last && (s.loc.srcFile.once || s.loc.srcFile.includeGuard))
+                s.loc.srcFile.freeContents(); // won't need the contents anymore
         }
         stack.psource = stack.psource.prev;
         debug (ContextStats)
@@ -727,7 +730,9 @@ struct Source
         loc.srcFile = sf;
         loc.lineNumber = 0;
         loc.isSystem = isSystem;
-        input = sf.contents;
+        assert(sf);
+        assert(sf.contents);
+        input = *sf.contents;
         isFile = true;
         includeGuard = null;
         this.pathIndex = pathIndex;
@@ -781,7 +786,7 @@ version (unittest)
 
         // Create a fake source file with contents
         auto sf = SrcFile.lookup("test.c");
-        sf.contents = cast(ustring)src;
+        sf.contents = cast(ustring*)&src;
 
         context.localStart(sf, &outbuf);
 

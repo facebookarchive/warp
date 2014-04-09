@@ -28,7 +28,7 @@ import textbuf;
 struct SrcFile
 {
     string filename;            // fully qualified file name
-    ustring* contents;           // contents of the file
+    ustring contents;           // contents of the file
     ustring includeGuard;       // macro #define used for #include guard
     bool once;                  // set if #pragma once set
     bool doesNotExist;          // file does not exist
@@ -80,10 +80,8 @@ struct SrcFile
     void freeContents()
     {
         //GC.free(cast(void*)contents.ptr);
-        assert(contents);
-        assert(*contents);
-        free(cast(void*)(*contents).ptr);
-        *contents = null;
+        free(cast(void*)contents.ptr);
+        contents = null;
     }
 
     /*******************************
@@ -94,30 +92,18 @@ struct SrcFile
         if (doesNotExist)
             return false;
 
-        if (contents && *contents)
-        {
-            cachedRead = true;
+        if (contents)
+        {   cachedRead = true;
             return true;                // already read
         }
 
         bool result = true;
-        auto ucontents = cast(ustring)file.myRead(filename);
-        if (!ucontents)
+        contents = cast(ustring)file.myRead(filename);
+        if (contents.ptr == null)
         {
             result = false;
             doesNotExist = true;
         }
-        /* Use an extra level of indirection to get at the file contents
-         * so we can delete and reload the contents even while multiple SrcFile's
-         * point at it.
-         */
-        if (!contents)
-        {
-            // We never free this
-            contents = cast(ustring*)malloc(ustring.sizeof);
-            assert(contents);
-        }
-        *contents = ucontents;
         return result;
     }
 }

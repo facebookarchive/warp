@@ -267,10 +267,10 @@ struct Context(R)
     void popFront()
     {
         auto s = stack.psource;
-        auto c = *s.ptext;
-        if (c)
+        if (!s.ptext.empty)
         {
-            ++s.ptext;
+            auto c = s.ptext.front;
+            s.ptext.popFront();
             stack.xc = c;
             expanded.put(c);
         }
@@ -283,8 +283,7 @@ struct Context(R)
         while (1)
         {
             auto s = stack.psource;
-            stack.xc = *s.ptext++;
-            if (stack.xc == 0)
+            if (s.ptext.empty)
             {
                 if (s.isFile && !s.input.empty)
                 {
@@ -298,6 +297,11 @@ struct Context(R)
                 stack.xc = stack.xc.init;
                 break;
             }
+            else
+            {
+                stack.xc = s.ptext.front;
+                s.ptext.popFront();
+            }
             expanded.put(stack.xc);
             break;
         }
@@ -306,20 +310,22 @@ struct Context(R)
     uchar[] restOfLine()
     {
         auto s = stack.psource;
-        auto len = strlen(cast(char*)s.ptext);
-        auto result = s.ptext[0 .. len];
-        s.ptext += len;
+        auto result = s.ptext[];
+        s.ptext = s.ptext[result.length .. result.length];
         stack.xc = '\n';
         return result;
     }
 
     void unget()
     {
+//writeln("unget");
         auto s = stack.psource;
-        if (s && s.ptext > s.lineBuffer[].ptr)
+        if (s && s.ptext.ptr > s.lineBuffer[].ptr)
         {
-            --s.ptext;
-            assert(*s.ptext == stack.xc);
+//writefln("unget %s %s", s.ptext.ptr, s.ptext.length);
+            s.ptext = s.lineBuffer[s.ptext.ptr - s.lineBuffer[].ptr - 1 .. s.lineBuffer.length];
+//writefln("unget %s %s", s.ptext.ptr, s.ptext.length);
+            assert(s.ptext[0] == stack.xc);
         }
     }
 
@@ -328,8 +334,7 @@ struct Context(R)
         auto s = push();
         s.lineBuffer.initialize();
         s.lineBuffer.put(c);
-        s.lineBuffer.put(0);
-        s.ptext = s.lineBuffer[].ptr;
+        s.ptext = s.lineBuffer[0 .. 1];
     }
 
     void push(const(uchar)[] str)
@@ -337,8 +342,7 @@ struct Context(R)
         auto s = push();
         s.lineBuffer.initialize();
         s.lineBuffer.put(str);
-        s.lineBuffer.put(0);
-        s.ptext = s.lineBuffer[].ptr;
+        s.ptext = s.lineBuffer[0 .. str.length];
     }
 
     Source* currentSourceFile()
@@ -632,11 +636,10 @@ struct SourceStack
     void popFront()
     {
         auto s = psource;
-        auto c = *s.ptext;
-        if (c)
+        if (!s.ptext.empty)
         {
-            xc = c;
-            ++s.ptext;
+            xc = s.ptext.front;
+            s.ptext.popFront();
         }
         else
             popFront2();
@@ -647,8 +650,12 @@ struct SourceStack
         while (1)
         {
             auto s = psource;
-            xc = *s.ptext++;
-            if (xc == 0)
+            if (!s.ptext.empty)
+            {
+                xc = s.ptext.front;
+                s.ptext.popFront();
+            }
+            else
             {
                 if (s.isFile && !s.input.empty)
                 {
@@ -682,7 +689,7 @@ struct Source
 {
     Textbuf!(uchar,"src") lineBuffer = void;
 
-    uchar* ptext;
+    uchar[] ptext;
 
     bool isFile;        // if it is a file
     bool isExpanded;    // true if already macro expanded
@@ -758,10 +765,9 @@ struct Source
             else
                 break;
         }
-        lineBuffer.put(0);              // add sentinel
-        ptext = lineBuffer[].ptr;
+        ptext = lineBuffer[];
 
-        assert(lineBuffer.length == 1 || lineBuffer[lineBuffer.length - 2] == '\n');
+        assert(lineBuffer.length == 0 || lineBuffer[lineBuffer.length - 1] == '\n');
         //writefln("\t%d", loc.lineNumber);
     }
 }

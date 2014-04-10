@@ -160,6 +160,7 @@ ustring macroReplacementList(R)(ref R text, bool objectLike, ustring[] parameter
                     outbuf.put('R');
                     outbuf.put('"');
                     text = text.skipRawStringLiteral(outbuf);
+                    continue;
                 }
                 goto default;
 

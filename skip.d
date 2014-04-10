@@ -241,7 +241,7 @@ R skipRawStringLiteral(alias error = err_fatal, R, S)(R r, ref S s)
                 }
                 else if (c == ' '  || c == '('  || c == ')'  ||
                          c == '\\' || c == '\t' || c == '\v' ||
-                         c == '\f' || c == '\n')
+                         c == '\f' || c == '\n' || c == '\r')
                 {
                     error("invalid dchar '%s'", c);
                     return r;
@@ -467,6 +467,7 @@ R skipBlankLine(R)(R r) if (isInputRange!R)
             case '\t':
             case '\v':
             case '\f':
+            case '\r':
             case ESC.space:
             case ESC.brk:
                 continue;

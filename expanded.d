@@ -68,7 +68,7 @@ struct Expanded(R)
 
     private void put2()
     {
-        if (lineBuffer[0] != '\n')
+        if (lineBuffer[0] != '\n' && lineBuffer[0] != '\r')
         {
             if (auto s = ctx.currentSourceFile())
             {

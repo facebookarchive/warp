@@ -56,6 +56,8 @@ Returns: Untyped array of bytes _read.
 
 void[] myRead(in char[] name, size_t upTo = size_t.max)
 {
+    void* result = null;
+
     version(Windows)
     {
         auto namez = std.utf.toUTF16z(name);
@@ -105,7 +107,7 @@ void[] myRead(in char[] name, size_t upTo = size_t.max)
         }
 
         size = min(upTo, size);
-        auto buf = malloc(size + 1);
+        auto buf = malloc(size + 2);
         assert(buf);
 
         DWORD numread = void;
@@ -115,9 +117,7 @@ void[] myRead(in char[] name, size_t upTo = size_t.max)
             free(buf);
             return null;
         }
-
-        (cast(ubyte*)buf)[size] = 0;            // sentinel at end
-        return buf[0 .. size];
+        result = buf;
     }
     else version(Posix)
     {
@@ -150,7 +150,7 @@ void[] myRead(in char[] name, size_t upTo = size_t.max)
             ? min(statbuf.st_size + 1, maxInitialAlloc)
             : minInitialAlloc);
 
-        auto result = malloc(initialAlloc + 1);
+        result = malloc(initialAlloc + 2);
         assert(result);
         size_t result_length = initialAlloc;
         size_t size = 0;
@@ -168,18 +168,34 @@ void[] myRead(in char[] name, size_t upTo = size_t.max)
             size += actual;
             if (size < result_length) continue;
             immutable newAlloc = size + sizeIncrement;
-            result = realloc(result, newAlloc + 1);
+            result = realloc(result, newAlloc + 2);
             assert(result);
             result_length = newAlloc;
         }
 
         result = result_length - size >= maxSlackMemoryAllowed
-            ? realloc(result, size + 1)
+            ? realloc(result, size + 2)
             : result;
-
-        (cast(ubyte*)result)[size] = 0;            // sentinel at end
-        return result[0 .. size];
     }
     else
         static assert(0);
+
+    /* Two bytes are available past the end. Use to ensure file ends
+     * in \n. Need two in case file ends with a \ character.
+     */
+    if (size)
+    {
+        if ((cast(ubyte*)result)[size - 1] != '\n')
+        {
+            (cast(ubyte*)result)[size] = '\n';
+            (cast(ubyte*)result)[size + 1] = '\n';
+            size += 2;
+        }
+    }
+    else
+    {   // File is empty, so make it a one-liner
+        (cast(ubyte*)result)[0] = '\n';
+        ++size;
+    }
+    return result[0 .. size];
 }

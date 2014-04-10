@@ -568,20 +568,16 @@ R readSrcLine(R, S)(R r, ref S s)
     alias Unqual!(ElementEncodingType!R) E;
 
     auto p = r.ptr;
-    auto pend = r.ptr + r.length;
 
     while (1)
     {
-        if (p == pend)
-            break;
         E c = *p++;
         if (c == '\n')
             break;
-        else
-            s.put(c);
     }
-    s.put('\n');
-    return r[p - r.ptr .. $];
+    size_t len = p - r.ptr;
+    s.put(r[0 .. len]);
+    return r[len .. $];
 }
 
 

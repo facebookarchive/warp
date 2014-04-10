@@ -318,31 +318,29 @@ struct Context(R)
 
     void unget()
     {
-//writeln("unget");
         auto s = stack.psource;
-        if (s && s.ptext.ptr > s.lineBuffer[].ptr)
-        {
-//writefln("unget %s %s", s.ptext.ptr, s.ptext.length);
-            s.ptext = s.lineBuffer[s.ptext.ptr - s.lineBuffer[].ptr - 1 .. s.lineBuffer.length];
-//writefln("unget %s %s", s.ptext.ptr, s.ptext.length);
-            assert(s.ptext[0] == stack.xc);
-        }
+        if (s)
+            push(stack.xc);
     }
 
     void push(uchar c)
     {
         auto s = push();
-        s.lineBuffer.initialize();
-        s.lineBuffer.put(c);
-        s.ptext = s.lineBuffer[0 .. 1];
+        s.smallString[0] = c;
+        s.ptext = s.smallString[];
     }
 
     void push(const(uchar)[] str)
     {
-        auto s = push();
-        s.lineBuffer.initialize();
-        s.lineBuffer.put(str);
-        s.ptext = s.lineBuffer[0 .. str.length];
+        if (str.length == 1)
+            push(str[0]);
+        else
+        {
+            auto s = push();
+            s.lineBuffer.initialize();
+            s.lineBuffer.put(str);
+            s.ptext = s.lineBuffer[0 .. str.length];
+        }
     }
 
     Source* currentSourceFile()
@@ -691,6 +689,7 @@ struct Source
 
     uchar[] ptext;
 
+    uchar[1] smallString; // for 1 character buffers
     bool isFile;        // if it is a file
     bool isExpanded;    // true if already macro expanded
     bool seenTokens;    // true if seen tokens

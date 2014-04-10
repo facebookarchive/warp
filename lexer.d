@@ -663,7 +663,10 @@ struct Lexer(R) if (isInputRange!R)
                                 src.push(ESC.brk);
                             }
 
-                            src.push(rs.empty ? cast(ustring)("" ~ ESC.space) : rs);
+                            if (rs.empty)
+                                src.push(ESC.space);
+                            else
+                                src.push(rs);
                             //src.push(rescanbuffer[]);
                             src.setExpanded();
                             src.expanded.on();

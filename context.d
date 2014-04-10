@@ -451,18 +451,17 @@ struct Context(R)
     void setExpanded() { stack.psource.isExpanded = true; }
 
     /***************************
-     * Return text associated with predefined macro.
+     * Push predefined macro text into input.
      */
-    ustring predefined(Id* m)
+    void pushPredefined(Id* m)
     {
         Loc loc;
-        auto s = currentSourceFile();
-        if (s)
+        if (auto s = currentSourceFile())
             loc = s.loc;
         else
             loc = lastloc;
         if (!loc.srcFile)
-            return null;
+            return;
 
         uint n;
 
@@ -473,7 +472,15 @@ struct Context(R)
                 break;
 
             case Id.IDfile:
-                return cast(ustring)('"' ~ loc.srcFile.filename ~ '"');
+            {
+                auto s = push();
+                s.lineBuffer.initialize();
+                s.lineBuffer.put('"');
+                s.lineBuffer.put(cast(ustring)loc.srcFile.filename);
+                s.lineBuffer.put('"');
+                s.ptext = s.lineBuffer[];
+                return;
+            }
 
             case Id.IDcounter:
                 n = counter++;
@@ -482,11 +489,10 @@ struct Context(R)
             default:
                 assert(0);
         }
-        auto p = cast(uchar*)malloc(counter.sizeof * 3 + 1);
-        assert(p);
-        auto len = sprintf(cast(char*)p, "%u", n);
+        uchar[counter.sizeof * 3 + 1] buf;
+        auto len = sprintf(cast(char*)buf.ptr, "%u", n);
         assert(len > 0);
-        return cast(ustring)p[0 .. len];
+        push(cast(ustring)buf[0 .. len]);
     }
 
     /*******************************************

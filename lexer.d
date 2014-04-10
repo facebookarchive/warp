@@ -543,8 +543,7 @@ struct Lexer(R) if (isInputRange!R)
                             if (m.flags & (Id.IDlinnum | Id.IDfile | Id.IDcounter))
                             {   // Predefined macro
                                 src.unget();
-                                auto p = src.predefined(m);
-                                src.push(p);
+                                src.pushPredefined(m);
                                 src.expanded.on();
                                 src.popFront();
                                 continue;

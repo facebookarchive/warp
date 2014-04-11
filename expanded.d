@@ -74,7 +74,7 @@ struct Expanded(R)
             if (auto s = ctx.currentSourceFile())
             {
                 auto linnum = s.loc.lineNumber - 1;
-                if (!ctx.lastloc.srcFile || ctx.lastloc.srcFile != s.loc.srcFile)
+                if (!ctx.lastloc.srcFile || ctx.lastloc.fileName !is s.loc.fileName)
                 {
                     if (ctx.uselastloc)
                     {

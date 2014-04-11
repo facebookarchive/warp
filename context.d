@@ -556,31 +556,6 @@ template isContext(R)
     enum bool isContext = __traits(hasMember, R, "stack");
 }
 
-
-/********************************************
- * Read a line of source from r and write it to the output range s.
- * Make sure line ends with \n
- */
-
-R readSrcLine(R, S)(R r, ref S s)
-        if (isInputRange!R && isOutputRange!(S,ElementEncodingType!R))
-{
-    alias Unqual!(ElementEncodingType!R) E;
-
-    auto p = r.ptr;
-
-    while (1)
-    {
-        E c = *p++;
-        if (c == '\n')
-            break;
-    }
-    size_t len = p - r.ptr;
-    s.put(r[0 .. len]);
-    return r[len .. $];
-}
-
-
 /*************************************************
  * Stack of Source's
  */
@@ -744,13 +719,58 @@ struct Source
     void readLine()
     {
         //writefln("Source.readLine() %d", loc.lineNumber);
-        lineBuffer.initialize();
+        if (!input.empty)
+        {
+            ++loc.lineNumber;
+
+            immutable(uchar)* p;
+            for (p = input.ptr; *p != '\n'; ++p)
+            {
+            }
+            auto len = p - input.ptr + 1;
+
+            if (len < 2)
+            {
+                ptext = cast(uchar[])input[0 .. len];
+                input = input[len .. $];
+                return;
+            }
+            else if (p[-1] == '\\')
+            {
+                lineBuffer.initialize();
+                lineBuffer.put(input[0 .. len - 2]);
+                input = input[len .. $];
+            }
+            else if (p[-1] == '\r' && len >= 3 && p[-2] == '\\')
+            {
+                lineBuffer.initialize();
+                lineBuffer.put(input[0 .. len - 3]);
+                input = input[len .. $];
+            }
+            else
+            {
+                ptext = cast(uchar[])input[0 .. len];
+                input = input[len .. $];
+                return;
+            }
+        }
 
         while (!input.empty)
         {
             ++loc.lineNumber;
-            input = input.readSrcLine(lineBuffer);
-            auto len = lineBuffer.length;
+
+            auto p = input.ptr;
+            while (1)
+            {
+                auto c = *p++;
+                if (c == '\n')
+                    break;
+            }
+            auto len = p - input.ptr;
+            lineBuffer.put(input[0 .. len]);
+            input = input[len .. $];
+
+            len = lineBuffer.length;
             uchar c = void;
             if (len >= 2 &&
                 ((c = lineBuffer[len - 2]) == '\\' ||

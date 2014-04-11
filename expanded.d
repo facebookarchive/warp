@@ -44,6 +44,7 @@ struct Expanded(R)
     {
         this.foutr = foutr;
         this.lineBuffer.initialize();
+        this.lineBuffer.put(0);
         this.noexpand = 0;
         this.lineNumber = 1;
     }
@@ -58,7 +59,7 @@ struct Expanded(R)
         //writefln("expanded.put(%02x '%s' %s)", c, cast(char)(c < ' ' ? '?' : c), noexpand);
         if (c != ESC.space && !noexpand)
         {
-            if (lineBuffer.length && lineBuffer.last() == '\n')
+            if (lineBuffer.last() == '\n')
                 put2();
             //writefln("lineBuffer.put('%c')", c);
             lineBuffer.put(c);
@@ -67,7 +68,7 @@ struct Expanded(R)
 
     private void put2()
     {
-        uchar c = lineBuffer[0];
+        uchar c = lineBuffer[1];
         if (c != '\n' && c != '\r')
         {
             if (auto s = ctx.currentSourceFile())
@@ -117,8 +118,9 @@ struct Expanded(R)
             }
         }
         ctx.uselastloc = false;
-        foutr.writePreprocessedLine(lineBuffer[]);
+        foutr.writePreprocessedLine(lineBuffer[1 .. lineBuffer.length]);
         lineBuffer.initialize();
+        lineBuffer.put(0);              // so its length is never 0
         ++lineNumber;
     }
 
@@ -144,7 +146,7 @@ struct Expanded(R)
      */
     void popBack()
     {
-        if (!noexpand && lineBuffer.length)
+        if (!noexpand && lineBuffer.length > 1)
             lineBuffer.pop();
     }
 
@@ -154,5 +156,6 @@ struct Expanded(R)
     void eraseLine()
     {
         lineBuffer.initialize();
+        lineBuffer.put(0);
     }
 }

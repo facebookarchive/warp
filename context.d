@@ -307,6 +307,17 @@ struct Context(R)
         }
     }
 
+    uchar[] lookAhead()
+    {
+        return stack.psource.ptext[];
+    }
+
+    void popFrontN(size_t n)
+    {
+        auto s = stack.psource;
+        s.ptext = s.ptext[n .. $];
+    }
+
     uchar[] restOfLine()
     {
         auto s = stack.psource;

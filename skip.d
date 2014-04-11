@@ -18,7 +18,7 @@ import core.stdc.stdio;
 import macros : ESC;
 import main : err_fatal;
 import ranges;
-import macros;
+import context;
 
 version (unittest)
 {
@@ -391,18 +391,76 @@ unittest
 
 
 R inIdentifier(R, S)(R r, ref S s)
-        if (isInputRange!R && isOutputRange!(S,ElementEncodingType!R))
+        if (isInputRange!R && isOutputRange!(S,Unqual!(ElementEncodingType!R)))
 {
-    while (!r.empty)
+    static bool isIdentifierChar(Unqual!(ElementEncodingType!R) c)
     {
-        auto c = cast(ElementEncodingType!R)r.front;
-        if (isIdentifierChar(c))
+        return ((c >= '0' || c == '$') &&
+                (c <= '9' || c >= 'A')  &&
+                (c <= 'Z' || c >= 'a' || c == '_') &&
+                (c <= 'z'));
+    }
+
+    static if (isContext!R)
+    {
+        /* Take advantage of knowledge of Context to work with a bunch of
+         * characters at once rather than one at a time. Much faster.
+         */
+        while (1)
         {
-            s.put(c);
+            auto c = cast(ElementEncodingType!R)r.front;
+            if (isIdentifierChar(c))
+            {
+                //assert(isAlphaNum(c) || c == '_' || c == '$');
+                s.put(c);
+                if (r.expanded.noexpand)
+                {
+                    auto a = r.lookAhead();
+                    size_t n;
+                    while (n < a.length)
+                    {
+                        if (isIdentifierChar(a[n]))
+                            ++n;
+                        else
+                            break;
+                    }
+                    if (n)
+                    {
+                        s.put(a[0 .. n]);
+                        r.popFrontN(n);
+                        if (n < a.length)
+                        {
+                            r.popFront();
+                            break;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                //assert(!(isAlphaNum(c) || c == '_' || c == '$'));
+                break;
+            }
+            r.popFront();
         }
-        else
-            break;
-        r.popFront();
+    }
+    else
+    {
+        while (!r.empty)
+        {
+            auto c = cast(ElementEncodingType!R)r.front;
+            if (isIdentifierChar(c))
+            {
+                //assert(isAlphaNum(c) || c == '_' || c == '$');
+                s.put(c);
+            }
+            else
+            {
+                //assert(!(isAlphaNum(c) || c == '_' || c == '$'));
+                break;
+            }
+            r.popFront();
+        }
     }
     return r;
 }

@@ -19,6 +19,7 @@ import macros : ESC;
 import main : err_fatal;
 import ranges;
 import context;
+import macros;
 
 version (unittest)
 {
@@ -393,14 +394,6 @@ unittest
 R inIdentifier(R, S)(R r, ref S s)
         if (isInputRange!R && isOutputRange!(S,Unqual!(ElementEncodingType!R)))
 {
-    static bool isIdentifierChar(Unqual!(ElementEncodingType!R) c)
-    {
-        return ((c >= '0' || c == '$') &&
-                (c <= '9' || c >= 'A')  &&
-                (c <= 'Z' || c >= 'a' || c == '_') &&
-                (c <= 'z'));
-    }
-
     static if (isContext!R)
     {
         /* Take advantage of knowledge of Context to work with a bunch of
@@ -411,7 +404,6 @@ R inIdentifier(R, S)(R r, ref S s)
             auto c = cast(ElementEncodingType!R)r.front;
             if (isIdentifierChar(c))
             {
-                //assert(isAlphaNum(c) || c == '_' || c == '$');
                 s.put(c);
                 if (r.expanded.noexpand)
                 {
@@ -438,7 +430,6 @@ R inIdentifier(R, S)(R r, ref S s)
             }
             else
             {
-                //assert(!(isAlphaNum(c) || c == '_' || c == '$'));
                 break;
             }
             r.popFront();
@@ -451,12 +442,10 @@ R inIdentifier(R, S)(R r, ref S s)
             auto c = cast(ElementEncodingType!R)r.front;
             if (isIdentifierChar(c))
             {
-                //assert(isAlphaNum(c) || c == '_' || c == '$');
                 s.put(c);
             }
             else
             {
-                //assert(!(isAlphaNum(c) || c == '_' || c == '$'));
                 break;
             }
             r.popFront();

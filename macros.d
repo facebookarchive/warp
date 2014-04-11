@@ -1523,12 +1523,11 @@ void writePreprocessedLine(R)(ref R r, const(uchar)[] line) if (isOutputRange!(R
         {
             switch (c)
             {
-                case 0:
+                case '\n':
                     r.put('\n');
                     return;
 
                 case '\r':
-                case '\n':
                     break;      // ignore
 
                 default:
@@ -1543,13 +1542,13 @@ void writePreprocessedLine(R)(ref R r, const(uchar)[] line) if (isOutputRange!(R
                         break;
                     }
                     auto cprev = p[-1];
-                    uchar cnext;
+                    uchar cnext = void;
                     while (1)
                     {
-                        if (p[1] == 0)       // ignore if at end
-                            goto case 0;
+                        cnext = p[1];
+                        if (cnext == '\n')       // ignore if at end
+                            goto case '\n';
                         ++p;
-                        cnext = *p;
                         if (cnext != ESC.brk)   // treat multiple ESC.brk's as one
                             break;
                     }

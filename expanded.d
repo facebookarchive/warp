@@ -94,26 +94,21 @@ struct Expanded(R)
                         s.loc.linemarker(foutr);
                         ctx.lastloc = s.loc;
                     }
+                    lineNumber = linnum;
                 }
                 else if (linnum != lineNumber)
                 {
-                    if (linnum == lineNumber + 1)
-                        foutr.put('\n');
+                    if (lineNumber + 30 > linnum)
+                    {
+                        foreach (i; lineNumber .. linnum)
+                            foutr.put('\n');
+                    }
                     else
                     {
-                        if (lineNumber + 30 > linnum)
-                        {
-                            foreach (i; lineNumber .. linnum)
-                                foutr.put('\n');
-                        }
-                        else
-                        {
-//writeln("test3");
-                            s.loc.linemarker(foutr);
-                        }
+                        s.loc.linemarker(foutr);
                     }
+                    lineNumber = linnum;
                 }
-                lineNumber = linnum;
             }
             else if (ctx.uselastloc && ctx.lastloc.srcFile)
             {
@@ -122,13 +117,12 @@ struct Expanded(R)
             }
         }
         ctx.uselastloc = false;
-        lineBuffer.put(0);              // add sentinel
         foutr.writePreprocessedLine(lineBuffer[]);
         lineBuffer.initialize();
         ++lineNumber;
     }
 
-  void put(const(uchar)[] s)
+    void put(const(uchar)[] s)
     {
         //writefln("expanded.put('%s')", cast(string)s);
         /* This will always be an identifier string, so we can skip

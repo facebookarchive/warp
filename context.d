@@ -729,19 +729,13 @@ struct Source
             }
             auto len = p - input.ptr + 1;
 
-            if (len < 2)
-            {
-                ptext = cast(uchar[])input[0 .. len];
-                input = input[len .. $];
-                return;
-            }
-            else if (p[-1] == '\\')
+            if (p[-1] == '\\')
             {
                 lineBuffer.initialize();
                 lineBuffer.put(input[0 .. len - 2]);
                 input = input[len .. $];
             }
-            else if (p[-1] == '\r' && len >= 3 && p[-2] == '\\')
+            else if (p[-1] == '\r' && p[-2] == '\\')
             {
                 lineBuffer.initialize();
                 lineBuffer.put(input[0 .. len - 3]);

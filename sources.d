@@ -79,8 +79,7 @@ struct SrcFile
      */
     void freeContents()
     {
-        //GC.free(cast(void*)contents.ptr);
-        free(cast(void*)contents.ptr);
+        myReadFree(cast(void[]) contents);
         contents = null;
     }
 

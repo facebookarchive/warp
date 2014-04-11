@@ -1283,8 +1283,7 @@ private R macroScanArgument(R, T)(R r1, bool va_args, ref T outbuf)
 
             @property bool empty()
             {
-                bool b = r1.empty && r1.stack.prev && r1.stack.prev.empty;
-                return b;
+                return r1.empty && (!r1.stack.prev || r1.stack.prev.empty);
             }
 
             @property E front()
@@ -1387,7 +1386,7 @@ private R macroScanArgument(R, T)(R r1, bool va_args, ref T outbuf)
                 break;
 
             case 0:
-              break loop;
+                break loop;
 
             default:
                 break;

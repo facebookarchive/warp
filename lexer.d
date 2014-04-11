@@ -158,15 +158,22 @@ struct Lexer(R) if (isInputRange!R)
 
         while (1)
         {
-            if (src.empty)
+            static if (!isContext)
             {
-                front = TOK.eof;
-                return;
+                if (src.empty)
+                {
+                    front = TOK.eof;
+                    return;
+                }
             }
 
             E c = cast(E)src.front;
             switch (c)
             {
+                case 0:
+                    front = TOK.eof;
+                    return;
+
                 case ' ':
                 case '\t':
                 case '\r':

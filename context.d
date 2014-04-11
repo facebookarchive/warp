@@ -270,8 +270,8 @@ struct Context(R)
         if (s.ptext.length)
         {
             auto c = s.ptext[0];
-            s.ptext = s.ptext[1 .. $];
             stack.xc = c;
+            s.ptext = s.ptext[1 .. $];
             expanded.put(c);
         }
         else

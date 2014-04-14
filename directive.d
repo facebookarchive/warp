@@ -928,7 +928,11 @@ void skipFalseCond(R)(ref R r)
             r.popFrontNoExpand();
         }
     }
-    err_fatal("end of file found before #endif");
+    import std.range;
+    static if (!isInfinite!R)
+    {
+        err_fatal("end of file found before #endif");
+    }
 }
 
 /*************************************

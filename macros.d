@@ -128,6 +128,7 @@ ustring macroReplacementList(R)(ref R text, bool objectLike, ustring[] parameter
         {
             case '\t':
                 c = ' ';
+                goto case;
             case ' ':
                 if (outbuf.length == 1 ||       // no leading whitespace
                     outbuf.last() == ' ')       // collapse adjacent whitespace into one ' '
@@ -483,6 +484,7 @@ private void stringize(R)(ref R outbuf, const(uchar)[] text)
                 case '?':
                 case '\\':
                     outbuf.put('\\');
+                    goto default;
                 default:
                     outbuf.put(c);
                     break;
@@ -525,6 +527,7 @@ private void stringize(R)(ref R outbuf, const(uchar)[] text)
 
             case '?':
                 outbuf.put('\\');
+                goto default;
             default:
                 outbuf.put(c);
                 break;

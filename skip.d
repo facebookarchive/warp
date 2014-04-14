@@ -128,6 +128,7 @@ R skipCharacterLiteral(alias error = err_fatal, R, S)(R r, ref S s)
             case '\'':
                 if (!slash)
                     return r;
+                goto default;
             default:
                 slash = false;
                 break;
@@ -180,6 +181,7 @@ R skipStringLiteral(alias error = err_fatal, R, S)(R r, ref S s)
             case '"':
                 if (!slash)
                     return r;
+                goto default;
             default:
                 slash = false;
                 break;
@@ -574,4 +576,3 @@ unittest
     r2 = s2.skipBlankLine();
     assert(r2.empty);
 }
-

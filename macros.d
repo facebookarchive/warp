@@ -767,7 +767,11 @@ void macroExpandedText(Context, R)(Id* m, ustring[] args, ref R buffer)
                 auto s = expbuf[];
                 auto t = trimEscWhiteSpace(s);
                 //writefln("\t\ttrim   '%s'", cast(string)t);
+                if (t.length && isMultiTok(t[0]))
+                    buffer.put(ESC.brk);
                 buffer.put(t);
+                if (t.length && isMultiTok(t[t.length - 1]))
+                    buffer.put(ESC.brk);
 
                 expbuf.free();
             }

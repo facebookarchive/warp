@@ -31,7 +31,8 @@ import ranges : BitBucket;
  *      range pointing past end of number
  */
 
-R lexNumber(R)(R r, out ppint_t result, out bool isunsigned, out bool isinteger) if (isInputRange!R)
+R lexNumber(R)(R r, out ppint_t result, out bool isunsigned, out bool isinteger)
+if (isInputRange!R)
 {
     alias Unqual!(ElementEncodingType!R) E;
 
@@ -67,6 +68,12 @@ R lexNumber(R)(R r, out ppint_t result, out bool isunsigned, out bool isinteger)
                 radix = 16;
                 break;
 
+            case 'b':
+            case 'B':
+                r.popFront();
+                radix = 2;
+                break;
+
             case '.':
                 r = r.skipFloat(bitbucket, false, false, false);
                 isinteger = false;
@@ -78,8 +85,8 @@ R lexNumber(R)(R r, out ppint_t result, out bool isunsigned, out bool isinteger)
                 isinteger = false;
                 return r;
 
-            case 'A': .. case 'D': case 'F':
-            case 'a': .. case 'd': case 'f':
+            case 'A': case 'C': .. case 'D': case 'F':
+            case 'a': case 'c': .. case 'd': case 'f':
                 err_fatal("octal digit expected");
                 r.popFront();
                 break;
@@ -95,7 +102,14 @@ R lexNumber(R)(R r, out ppint_t result, out bool isunsigned, out bool isinteger)
         ppint_t d;
         switch (c)
         {
-            case '0': .. case '9':
+            case '2': .. case '9':
+                if (radix == 2)
+                {
+                    err_fatal("0 or 1 expected");
+                }
+                goto case;
+
+            case '0': case '1':
                 r.popFront();
                 d = c - '0';
                 break;
@@ -274,7 +288,20 @@ unittest
     assert(!isinteger);
     assert(s == "f");
 
-    string[] floats = ["1f", "5e+08", "1.4", "89.", "0xep+1", "1E9"];
+    s = "0b1101";
+    s = s.lexNumber(number, isunsigned, isinteger);
+    assert(isinteger);
+    assert(number == 13);
+    assert(s.empty);
+
+    s = "0B10";
+    s = s.lexNumber(number, isunsigned, isinteger);
+    assert(isinteger);
+    assert(number == 2);
+    assert(s.empty);
+
+    string[] floats = ["1f", "5e+08", "1.4", "89.", "0xep+1", "1E9",
+            "083.", "0023.2" ];
     foreach (f; floats)
     {
         f = f.lexNumber(number, isunsigned, isinteger);

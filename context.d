@@ -160,18 +160,25 @@ struct Context(R)
         // Initialize source text
         pushFile(sf, false, -1);
 
-        if (auto s = currentSourceFile())
+        version (unittest)
         {
-            // Output a prolog the way gcc does (in particular
-            // contains directory information that may be helping gdb
-            // locate sources).
-            import std.file, std.format;
-            outrange.formattedWrite(
-                "# 1 \"%1$s\"\n"
-                "# 1 \"%2$s//\"\n"
-                "# 1 \"<command-line>\"\n"
-                "# 1 \"%1$s\"\n",
-                s.loc.srcFile.filename, getcwd);
+            // Don't make unittest results unnecessarily complicated
+        }
+        else
+        {
+            if (auto s = currentSourceFile())
+            {
+                // Output a prolog the way gcc does (in particular
+                // contains directory information that may be helping gdb
+                // locate sources).
+                import std.file, std.format;
+                outrange.formattedWrite(
+                    "# 1 \"%1$s\"\n"
+                    "# 1 \"%2$s//\"\n"
+                    "# 1 \"<command-line>\"\n"
+                    "# 1 \"%1$s\"\n",
+                    s.loc.srcFile.filename, getcwd);
+            }
         }
     }
 

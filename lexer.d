@@ -639,6 +639,8 @@ struct Lexer(R) if (isInputRange!R)
                                         m.parameters.length,
                                         !!(m.flags & Id.IDdotdotdot),
                                          argsbuffer, argbuffer);
+                                if (m.flags & Id.IDpragma)
+                                    destringizePragmaArg(argsbuffer, argbuffer);
                             }
                             auto xcnext = src.front;
 

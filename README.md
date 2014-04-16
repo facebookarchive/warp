@@ -9,8 +9,8 @@ The companion program `warpdrive` drives `warp` in conjunction with
 the predefined macros of a few of today's crop of compilers (gcc
 4.7.1, gcc 4.8.1, clang 3.2, and clang 3.4).
 
-Currently `warp`'s build has only been tested on CentOS 6. More
-officially supported OSs to follow.
+Currently `warp`'s build has only been tested with gcc 4.7.1 and gcc 4.8.1 on CentOS 6. More
+officially supported platforms to follow.
 
 Dependencies
 ------------

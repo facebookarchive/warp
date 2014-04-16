@@ -15,6 +15,7 @@ import core.stdc.time;
 import std.stdio;
 
 import main;
+import macros;
 
 /******************************
  * All identifiers become a pointer to an instance
@@ -153,6 +154,7 @@ struct Id
         IDlinnum       = 0x20,
         IDfile         = 0x40,
         IDcounter      = 0x80,
+        IDpragma       = 0x100,
     }
 
     ustring text;         // replacement text of the macro
@@ -181,6 +183,10 @@ struct Id
 
         len = sprintf(cast(char*)date.ptr,"\"%.8s\"",p+11);
         defineMacro(cast(ustring)"__TIME__", null, date[0..len].idup, IDpredefined);
+
+        static ustring[1] params = [cast(ustring)"arg"];
+        defineMacro(cast(ustring)"_Pragma", params, cast(ustring)("\n#pragma " ~ ESC.start ~ ESC.arg1 ~ "\n"),
+            IDpredefined | IDpragma | IDfunctionLike);
     }
 
     static size_t getHash(const(uchar)[] name)

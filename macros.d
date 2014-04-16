@@ -575,6 +575,69 @@ unittest
     outbuf.free();
 }
 
+/********************************************
+ * Fix _Pragma arg by destringizing per C99 6.10.9:
+ * "The string literal is destringized by deleting the L prefix, if
+ * present, deleting the leading and trailing double-quotes, replacing each
+ * escape sequence \" by a double-quote, and replacing each escape sequence \\ by
+ * a single backslash."
+ */
+
+void destringizePragmaArg(S, T)(S args, ref T argbuffer)
+{
+    bool slash;
+    assert(args.length == 1);
+    auto arg = args[0];
+    //writefln("destringizePragmaArg('%s')", cast(string)arg);
+    size_t len = argbuffer.length;
+    if (arg.length < 2)
+        goto Lerror;
+    if (arg[0] == ' ')
+        arg = arg[1 .. $];
+    if (arg[0] == 'L')
+        arg = arg[1 .. $];
+    if (arg.length < 2)
+        goto Lerror;
+    if (arg[0] != '"')
+        goto Lerror;
+    arg = arg[1 .. $];
+    argbuffer.initialize();     // recycle argbuffer, overwriting arg
+    foreach (i, c; arg)
+    {
+        switch (c)
+        {
+            case '\\':
+                slash = !slash;
+                if (slash)
+                    continue;
+                break;
+
+            case '"':
+                if (!slash)
+                {
+                    if (i + 1 == arg.length)
+                    { }
+                    else if (i + 2 == arg.length && arg[i + 1] == ' ')
+                    { }  // allow trailing space
+                    else
+                        goto Lerror;
+                    args.pop();
+                    args.put(cast(ustring)(argbuffer[]));
+                    return;
+                }
+                slash = false;
+                break;
+
+            default:
+                slash = false;
+                break;
+        }
+        argbuffer.put(c);
+    }
+
+Lerror:
+    err_fatal("argument to _Pragma must be a string literal");
+}
 
 /********************************************
  * Get Ith arg from args.
@@ -1130,6 +1193,8 @@ void macroExpand(Context, R)(const(uchar)[] text, ref R outbuf)
                                     m.parameters.length,
                                     !!(m.flags & Id.IDdotdotdot),
                                      argsbuffer, argbuffer);
+                            if (m.flags & Id.IDpragma)
+                                destringizePragmaArg(argsbuffer, argbuffer);
                         }
 
                         outbuf.setLength(len);

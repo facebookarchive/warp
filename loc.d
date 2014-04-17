@@ -14,6 +14,17 @@ import std.stdio;
 import sources;
 
 /*************************************
+ * Flags that indicate system file status.
+ */
+
+enum Sys : ubyte
+{
+    none = 0,     // not a system file
+    angle = 1,    // #include'd with < >
+    syspath = 2,  // appears in --isystem path, or was #include'd from a Sys.syspath file
+}
+
+/*************************************
  * Current location.
  */
 
@@ -22,7 +33,7 @@ struct Loc
     SrcFile* srcFile;
     string fileName;    // because #line may change the filename
     uint lineNumber;    // line number of current position
-    bool isSystem;      // true if system file
+    Sys system;        // system file status
 
     /********************************************
      * Write out linemarker for current location to range r.
@@ -30,7 +41,7 @@ struct Loc
     void linemarker(R)(R r)
     {
         r.formattedWrite("# %d \"%s\"", lineNumber - 1, fileName);
-        if (isSystem)
+        if (system)
         {
             r.put(' ');
             /* Values are:
@@ -49,7 +60,7 @@ struct Loc
      */
     void write(File* f)
     {
-        //writefln("%s(%s) %s", fileName, lineNumber, isSystem);
+        //writefln("%s(%s) %s", fileName, lineNumber, system);
         if (srcFile)
             f.writef("%s(%d) : ", fileName, lineNumber);
     }

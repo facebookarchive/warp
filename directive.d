@@ -403,7 +403,7 @@ bool parseDirective(R)(ref R r)
                     if (!m)
                     {
                         auto csf = r.src.currentSourceFile();
-                        if (csf && csf.loc.isSystem)
+                        if (csf && csf.loc.system)
                         {
                             /* System macros can redefine without a #undef first,
                              * so fake #undef and try again
@@ -651,7 +651,7 @@ bool parseDirective(R)(ref R r)
                     // Things to know about the file doing the #include'ing
                     string currentFile;         // file name
                     int pathIndex;              // path index
-                    bool isSystem;              // is it a system file
+                    Sys system;                 // is it a system file
 
                     auto csf = r.src.currentSourceFile();
                     if (csf)
@@ -659,7 +659,7 @@ bool parseDirective(R)(ref R r)
                         csf.seenTokens = true;
                         currentFile = cast(string)csf.loc.srcFile.filename;
                         pathIndex = csf.pathIndex;
-                        isSystem = csf.loc.isSystem;
+                        system = csf.loc.system;
                     }
 
                     // Turn off expanded output so this line is not emitted
@@ -708,7 +708,7 @@ bool parseDirective(R)(ref R r)
                     r.src.unget();
                     r.src.push('\n');
                     r.src.includeFile(includeNext, sysstring, cast(char[])s,
-                        currentFile, pathIndex, isSystem);
+                        currentFile, pathIndex, system);
                     stringbuf.free();
                     r.src.popFront();
                     r.src.expanded.on();
@@ -943,21 +943,16 @@ void skipFalseCond(R)(ref R r)
  *      s               the filename string in a temp buffer
  *      currentFile     the file that is doing the #include
  *      pathIndex       the path index of the file that is doing the #include
- *      isSystem        the file doing the #include is a system file
+ *      system          the system status of the file doing the #include
  */
 
 void includeFile(R)(R ctx, bool includeNext, bool sysstring, const(char)[] s,
-        string currentFile, int pathIndex, bool isSystem)
+        string currentFile, int pathIndex, Sys system)
 {
     //writefln("includeFile('%s')", s);
     s = strip(s);       // remove leading and trailing whitespace
 
-    bool curdir = !sysstring && !includeNext;   // always look at current directory first
-
-    if (isSystem)
-        sysstring = true;
-
-    auto sf = ctx.searchForFile(includeNext, curdir, sysstring, s, pathIndex, currentFile);
+    auto sf = ctx.searchForFile(includeNext, sysstring, system, s, pathIndex, currentFile);
     if (!sf)
     {
         err_fatal("#include file '%s' not found", s);
@@ -970,7 +965,7 @@ void includeFile(R)(R ctx, bool includeNext, bool sysstring, const(char)[] s,
         {
             stderr.writef("%s%s",
                     c,
-                    sysstring ? "S" : " ");
+                    system ? "S" : " ");
             for (auto level = ctx.nestLevel(); level > 0; --level)
                 stderr.write(' ');
             stderr.writeln(sf.filename);
@@ -997,5 +992,5 @@ void includeFile(R)(R ctx, bool includeNext, bool sysstring, const(char)[] s,
 
     //writefln("found '%s', pathIndex = %s", sf.filename, pathIndex);
     writeStatus(sf.cachedRead ? 'C' : ' ');
-    ctx.pushFile(sf, sysstring, pathIndex);
+    ctx.pushFile(sf, system, pathIndex);
 }

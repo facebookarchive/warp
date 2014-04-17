@@ -158,7 +158,7 @@ struct Context(R)
         expanded.start(outrange);
 
         // Initialize source text
-        pushFile(sf, false, -1);
+        pushFile(sf, Sys.none, -1);
 
         version (unittest)
         {
@@ -182,12 +182,12 @@ struct Context(R)
         }
     }
 
-    void pushFile(SrcFile* sf, bool isSystem, int pathIndex)
+    void pushFile(SrcFile* sf, Sys system, int pathIndex)
     {
         //write("pushFile ", pathIndex);
         auto s = push();
         psourceFile = s;
-        s.addFile(sf, isSystem, pathIndex);
+        s.addFile(sf, system, pathIndex);
         if (lastloc.srcFile)
             uselastloc = true;
         assert(s.ptext);
@@ -517,32 +517,31 @@ struct Context(R)
      * Search for file along paths[]
      * Input:
      *  s               file to search for (in a temp buffer)
+     *  sysstring       if <file>
+     *  system          system status of the the file doing the #include
      *  currentFile     file name of file doing the #include
      *  pathIndex       index of file doing the #include
      * Output:
      *  pathIndex       index of where file was found
-     *  isSystem        set to true if file is found in -isystem paths
+     *  system          new value for found file
      */
-    SrcFile* searchForFile(bool includeNext, bool curdir, ref bool isSystem, const(char)[] s,
+    SrcFile* searchForFile(bool includeNext, bool sysstring, ref Sys system,
+        const(char)[] s,
         ref int pathIndex, string currentFile)
     {
-        //writefln("searchForFile(includeNext = %s, curdir = %s, isSystem = %s, s = '%s')", includeNext, curdir, isSystem, s);
+        //writefln("searchForFile(includeNext = %s, system = %s, s = '%s')", includeNext, system, s);
+        //writefln("paths = [%s]", paths);
 
-        string currentPath;
-        if (curdir)
+        string currentPath = null;
+        if (!sysstring && !includeNext)
             currentPath = dirName(currentFile);
 
-        if (isSystem)
-        {
-            if (includeNext)
-                ++pathIndex;
-            else
-                pathIndex = 0; //cast(int)sysIndex;
-        }
+        if (includeNext)
+            ++pathIndex;
         else
         {
-            if (includeNext)
-                ++pathIndex;
+            if (system || sysstring)
+                pathIndex = 1;          // skip current working directory, which is always first
             else
                 pathIndex = 0;
         }
@@ -551,15 +550,20 @@ struct Context(R)
         if (!sf)
             return null;
 
-        //writefln("path = %d sys = %d length = %d", pathIndex, sysIndex, paths.length);
+        //writefln("pathIndex = %d sysIndex = %d length = %d", pathIndex, sysIndex, paths.length);
         if (pathIndex >= sysIndex && pathIndex < paths.length)
-            isSystem = true;
+            system |= Sys.syspath;      // |= because bit is transitive
 
-        if (!sf.cachedRead)
-        {
-            if (!isSystem && doDeps)
-                deps ~= sf.filename;
-        }
+        /* Do not add to dependencies files that are found in system header directories,
+         * or are transitively included from such a header.
+         * "" or < > status has no bearing on dep generation.
+         */
+
+        if (!sf.cachedRead && doDeps && !(system & Sys.syspath))
+            deps ~= sf.filename;
+
+        if (sysstring)
+            system |= Sys.angle;
         return sf;
     }
 }
@@ -715,13 +719,13 @@ struct Source
         }
     }
 
-    void addFile(SrcFile* sf, bool isSystem, int pathIndex)
+    void addFile(SrcFile* sf, Sys system, int pathIndex)
     {
         // set new file, set haven't seen tokens yet
         loc.srcFile = sf;
         loc.fileName = sf.filename;
         loc.lineNumber = 0;
-        loc.isSystem = isSystem;
+        loc.system = system;
         input = sf.contents;
         isFile = true;
         includeGuard = null;

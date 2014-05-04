@@ -19,7 +19,7 @@ import macros : ESC;
 import main : err_fatal;
 import ranges;
 import context;
-import macros;
+import charclass;
 
 version (unittest)
 {

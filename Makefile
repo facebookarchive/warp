@@ -12,7 +12,7 @@ endif
 # warp sources
 SRCS=cmdline.d constexpr.d context.d directive.d expanded.d file.d		\
 id.d lexer.d loc.d macros.d main.d number.d outdeps.d ranges.d skip.d	\
-sources.d stringlit.d textbuf.d
+sources.d stringlit.d textbuf.d charclass.d
 
 # Binaries generated
 BIN=warp warpdrive_gcc4_7_1 warpdrive_gcc4_8_1 warpdrive_clang3_2 \

@@ -41,12 +41,18 @@ struct StaticArrayBuffer(E, size_t N)
 
     void put(E e)
     {
+        if (i >= N) {
+          detectedOverflow();
+        }
         arr[i] = e;
         ++i;
     }
 
     void put(E[] e)
     {
+        if (i + e.length >= N + 1) {
+            detectedOverflow();
+        }
         arr[i .. i + e.length] = e[];
         i += e.length;
     }
@@ -57,7 +63,15 @@ struct StaticArrayBuffer(E, size_t N)
     }
 
     @property size_t length() { return i; }
+
+ private:
+    void detectedOverflow() {
+      import main;
+      err_fatal("Buffer overflowed. Possibly caused by forgetting to "
+          "complete a git merge in your code.");
+    }
 }
+
 
 //import std.stdio;
 

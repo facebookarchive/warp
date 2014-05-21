@@ -25,66 +25,9 @@ import number;
 import ranges;
 import skip;
 import textbuf;
+import charclass;
 
 bool logging;
-
-/******************************************
- * Characters that make up the start of an identifier.
- */
-
-immutable bool[256] tabIdentifierStart;
-static this()
-{
-    for (uint u = 0; u < 0x100; ++u)
-    {
-        tabIdentifierStart[u] = (isAlpha(u) || u == '_' || u == '$');
-    }
-}
-
-bool isIdentifierStart(uchar c) pure
-{
-    return tabIdentifierStart[c];
-}
-
-unittest
-{
-    /* Exhaustively test every char
-     */
-    for (uint u = 0; u < 0x100; ++u)
-    {
-        assert(isIdentifierStart(cast(uchar)u) == (isAlpha(u) || u == '_' || u == '$'));
-    }
-}
-
-
-/*******************************************
- * Characters that make up the tail of an identifier.
- */
-
-immutable bool[256] tabIdentifierChar;
-static this()
-{
-    for (uint u = 0; u < 0x100; ++u)
-    {
-        tabIdentifierChar[u] = (isAlphaNum(u) || u == '_' || u == '$');
-    }
-}
-
-bool isIdentifierChar(uchar c) pure
-{
-    return tabIdentifierChar[c];
-}
-
-unittest
-{
-    /* Exhaustively test every char
-     */
-    for (uint u = 0; u < 0x100; ++u)
-    {
-        assert(isIdentifierChar(cast(uchar)u) == (isAlphaNum(u) || u == '_' || u == '$'));
-    }
-}
-
 
 // Embedded escape sequence commands
 enum ESC : ubyte
@@ -1583,50 +1526,6 @@ unittest
 //writefln("|%s|, %s", arg, arg.length);
     assert(!r.empty && r.front == ',');
     assert(arg[1 .. arg.length] == `aR"x(b")x"`);
-}
-
-/*****************************************
- * 'Break' characters unambiguously separate tokens
- */
-
-bool isBreak(uchar c) pure nothrow
-{
-    return c == ' ' ||
-           c == '\t' ||
-           c == '\n' ||
-           c == '\v' ||
-           c == '\f' ||
-           c == '\r' ||
-           c == '(' ||
-           c == ')' ||
-           c == ',' ||
-           c == ';' ||
-           c == '?' ||
-           c == '[' ||
-           c == ']' ||
-           c == '{' ||
-           c == '}' ||
-           c == '~';
-}
-
-
-/*************************************
- * 'MultiTok' characters can be part of multiple character tokens
- */
-
-bool isMultiTok(uchar c) pure nothrow
-{
-    return c == '*' ||
-           c == '+' ||
-           c == '-' ||
-           c == '.' ||
-           c == '/' ||
-           c == ':' ||
-           c == '<' ||
-           c == '=' ||
-           c == '>' ||
-           c == '^' ||
-           c == '|';
 }
 
 /*********************************************************

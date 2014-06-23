@@ -107,7 +107,7 @@ struct Id
         auto id = new Id(name, hash);
         *pbucket = id;
 //++count;
-//writefln("%s %s %s", count, depth, cast(string)name);
+//writefln("count: %s depth %s hash %s bucket %s %s", count, depth, hash, hash % buckets.length, cast(string)name);
         return id;
     }
 
@@ -199,6 +199,7 @@ struct Id
         }
         foreach (c; name)
             hash = hash * 37 + c;
-        return hash;
+        hash ^= (hash >> 20) ^ (hash >> 12);
+        return hash ^ (hash >> 7) ^ (hash >> 4);
     }
 }

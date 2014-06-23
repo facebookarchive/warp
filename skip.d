@@ -37,12 +37,50 @@ version (unittest)
 
 R skipCppComment(alias error = err_fatal, R)(R r) if (isInputRange!R)
 {
-    while (!r.empty)
+    static if (isContext!R)
     {
-        auto c = r.front;
-        r.popFront();
-        if (c == '\n')
-            return r;
+        // Take advantage of lookahead to speed up loop
+        while (1)
+        {
+            auto a = r.lookAhead();
+            size_t n;
+            while (n < a.length)
+            {
+                if (a[n] != '\n')
+                    ++n;
+                else
+                {
+                    r.popFrontN(n + 1);
+                    if (!r.empty)
+                    {
+                        r.front;
+                        r.popFront();           // to start of next line
+                    }
+                    return r;
+                }
+            }
+            if (n)
+                r.popFrontN(n);
+            else if (!r.empty)
+            {
+                auto c = r.front;
+                r.popFront();
+                if (c == '\n')
+                    return r;
+            }
+            else
+                break;
+        }
+    }
+    else
+    {
+        while (!r.empty)
+        {
+            auto c = r.front;
+            r.popFront();
+            if (c == '\n')
+                return r;
+        }
     }
     error("// comment is not closed with newline");
     return r;

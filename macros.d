@@ -869,6 +869,33 @@ void macroExpandedText(Context, R)(Id* m, ustring[] args, ref R buffer)
 
 //debug=MacroExpand;
 
+// This table is to speed the switch() lookup in macroExpand()
+private enum EXPAND : ubyte { none, doublequote, singlequote, expand, zero, dot, digit, idstart }
+private immutable EXPAND[256] expand;
+
+static this()
+{
+    // Initialize lookup table
+    foreach (uint u; 0 .. 256)
+    {
+        EXPAND e;
+        switch (u)
+        {
+            case '"':           e = EXPAND.doublequote;         break;
+            case '\'':          e = EXPAND.singlequote;         break;
+            case ESC.expand:    e = EXPAND.expand;              break;
+            case 0:             e = EXPAND.zero;                break;
+            case '.':           e = EXPAND.dot;                 break;
+            case '0': .. case '9': e = EXPAND.digit;            break;
+            default:
+                if (isIdentifierStart(cast(ubyte)u))
+                    e = EXPAND.idstart;
+                break;
+        }
+        expand[u] = e;
+    }
+}
+
 void macroExpand(Context, R)(const(uchar)[] text, ref R outbuf)
 {
     debug (MacroExpand)
@@ -888,9 +915,9 @@ void macroExpand(Context, R)(const(uchar)[] text, ref R outbuf)
     while (1) //(!r.empty) // r.front returns 0 for end of input
     {
         auto c = r.front;
-        switch (c)
+        final switch (expand[c])
         {
-            case '"':
+            case EXPAND.doublequote:
                 /* Skip over character literals and string literals without
                  * examining their insides
                  */
@@ -907,13 +934,13 @@ void macroExpand(Context, R)(const(uchar)[] text, ref R outbuf)
                 }
                 continue;
 
-            case '\'':
+            case EXPAND.singlequote:
                 r.popFront();
                 outbuf.put(c);
                 r = r.skipCharacterLiteral(outbuf);
                 continue;
 
-            case ESC.expand:
+            case EXPAND.expand:
                 r.popFront();
                 outbuf.put(c);
                 c = r.front;
@@ -925,10 +952,10 @@ void macroExpand(Context, R)(const(uchar)[] text, ref R outbuf)
                 r.popFront();
                 break;
 
-            case 0:
+            case EXPAND.zero:
                 goto Ldone;
 
-            case '.':
+            case EXPAND.dot:
                 r.popFront();
                 outbuf.put(c);
                 if (!r.empty)
@@ -962,12 +989,11 @@ void macroExpand(Context, R)(const(uchar)[] text, ref R outbuf)
                 }
                 continue;
 
-            case '0': .. case '9':
+            case EXPAND.digit:
                 r = r.skipFloat(outbuf, false, false, false);
                 continue;
 
-            default:
-                if (isIdentifierStart(c))
+            case EXPAND.idstart:
                 {
                     auto expanded = r.isExpanded();
                     size_t len = outbuf.length;
@@ -1176,8 +1202,9 @@ void macroExpand(Context, R)(const(uchar)[] text, ref R outbuf)
                     }
                     continue;
                 }
-                else
-                    r.popFront();
+
+            case EXPAND.none:
+                r.popFront();
                 break;
         }
 //        debug (MacroExpand)

@@ -41,6 +41,9 @@ import sources;
 
 struct Context(R)
 {
+    SourceStack stack;
+    Expanded!R expanded;         // for expanded (preprocessed) output
+
     const Params params;      // command line parameters
 
     const string[] paths;     // #include paths
@@ -52,8 +55,6 @@ struct Context(R)
     bool doDeps;        // true if doing dependency file generation
     string[] deps;      // dependency file contents
 
-    SourceStack stack;
-
     private Source* psourceFile;
 
     debug (ContextStats)
@@ -61,8 +62,6 @@ struct Context(R)
         int sourcei;
         int sourceimax;
     }
-
-    Expanded!R expanded;         // for expanded (preprocessed) output
 
     Loc lastloc;
     bool uselastloc;

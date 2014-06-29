@@ -739,7 +739,7 @@ void macroExpandedText(Context, R)(Id* m, ustring[] args, ref R buffer)
 
                         /* Special case of ESC.start i ESC.start ESC.concat ESC.start j
                          * Paul Mensonides writes:
-                         * In summary, blue paint (PRE_EXP) on either operand of
+                         * In summary, blue paint (ESC.expand) on either operand of
                          * ## should be discarded unless the concatenation doesn't
                          * produce a new identifier--which can only happen (in
                          * well-defined code) via the concatenation of a

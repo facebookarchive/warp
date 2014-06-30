@@ -749,61 +749,76 @@ struct Source
             immutable(uchar)* p;
             for (p = input.ptr; *p != '\n'; ++p)
             {
+                if (*cast(byte*)p < 0 && (*p == ESC.space || *p == ESC.brk))
+                    goto L1;
             }
-            auto len = p - input.ptr + 1;
 
-            if (p[-1] == '\\')
+            if (p[-1] == '\\' ||                // SPAD ensures we can look behind
+                p[-1] == '\r' && p[-2] == '\\')
             {
-                lineBuffer.initialize();
-                lineBuffer.put(input[0 .. len - 2]);
-                input = input[len .. $];
-            }
-            else if (p[-1] == '\r' && p[-2] == '\\')
-            {
-                lineBuffer.initialize();
-                lineBuffer.put(input[0 .. len - 3]);
-                input = input[len .. $];
+             L1:
+                readLineEsc();
             }
             else
             {
+                auto len = p - input.ptr + 1;
                 ptext = cast(uchar[])input[0 .. len];
                 input = input[len .. $];
-                return;
             }
         }
+    }
 
+    /**********************
+     * Same as readLine(), but ESC.space and ESC.brk need to be encoded as 0xFX.
+     * This should be fine as raw binary data is only meaningful inside string or character literals,
+     * where 00 is already encoded.
+     */
+    void readLineEsc()
+    {
+        lineBuffer.initialize();
         while (!input.empty)
         {
-            ++loc.lineNumber;
-
-            auto p = input.ptr;
             while (1)
             {
-                auto c = *p++;
-                if (c == '\n')
-                    break;
-            }
-            auto len = p - input.ptr;
-            lineBuffer.put(input[0 .. len]);
-            input = input[len .. $];
+                uchar c = input[0];
+                input = input[1 .. $];
+                switch (c)
+                {
+                    case '\n':
+                        lineBuffer.put(c);
+                        break;
 
-            len = lineBuffer.length;
+                    case ESC.space:
+                    case ESC.brk:
+                        lineBuffer.put(cast(ustring)"\\37");
+                        c = (c & 7) + '0';
+                        goto default;
+
+                    default:
+                        lineBuffer.put(c);
+                        continue;
+                }
+                break;
+            }
+            auto len = lineBuffer.length;
+            assert(len >= 5);                   // should be at least \xXXn
             uchar c = void;
-            if (len >= 2 &&
+            if (
                 ((c = lineBuffer[len - 2]) == '\\' ||
-                 (c == '\r' && len >= 3 && lineBuffer[len - 3] == '\\')))
+                 (c == '\r' && lineBuffer[len - 3] == '\\')))
             {
                 if (c == '\r')
                     lineBuffer.pop();
                 lineBuffer.pop();
                 lineBuffer.pop();
+                ++loc.lineNumber;
             }
             else
                 break;
         }
         ptext = lineBuffer[];
 
-        assert(lineBuffer.length == 0 || lineBuffer[lineBuffer.length - 1] == '\n');
+        assert(lineBuffer.length && lineBuffer[lineBuffer.length - 1] == '\n');
         //writefln("\t%d", loc.lineNumber);
     }
 }

@@ -41,6 +41,9 @@ import sources;
 
 struct Context(R)
 {
+    SourceStack stack;
+    Expanded!R expanded;         // for expanded (preprocessed) output
+
     const Params params;      // command line parameters
 
     const string[] paths;     // #include paths
@@ -52,8 +55,6 @@ struct Context(R)
     bool doDeps;        // true if doing dependency file generation
     string[] deps;      // dependency file contents
 
-    SourceStack stack;
-
     private Source* psourceFile;
 
     debug (ContextStats)
@@ -61,8 +62,6 @@ struct Context(R)
         int sourcei;
         int sourceimax;
     }
-
-    Expanded!R expanded;         // for expanded (preprocessed) output
 
     Loc lastloc;
     bool uselastloc;
@@ -749,72 +748,30 @@ struct Source
             immutable(uchar)* p;
             for (p = input.ptr; *p != '\n'; ++p)
             {
-                if (!((*p & 0x80) && (*p == ESC.space || *p == ESC.brk)))
-                    continue;
-                readLineEsc();
-                return;
+                if (*cast(byte*)p < 0 && (*p == ESC.space || *p == ESC.brk))
+                    goto L1;
             }
-            auto len = p - input.ptr + 1;
 
-            if (p[-1] == '\\')
+            if (p[-1] == '\\' ||             // SPAD ensures we can look behind
+                p[-1] == '\r' && p[-2] == '\\')
             {
-                lineBuffer.initialize();
-                lineBuffer.put(input[0 .. len - 2]);
-                input = input[len .. $];
-            }
-            else if (p[-1] == '\r' && p[-2] == '\\')
-            {
-                lineBuffer.initialize();
-                lineBuffer.put(input[0 .. len - 3]);
-                input = input[len .. $];
+             L1:
+                readLineEsc();
             }
             else
             {
+                auto len = p - input.ptr + 1;
                 ptext = cast(uchar[])input[0 .. len];
                 input = input[len .. $];
-                return;
             }
         }
-
-        while (!input.empty)
-        {
-            ++loc.lineNumber;
-
-            auto p = input.ptr;
-            while (1)
-            {
-                auto c = *p++;
-                if (c == '\n')
-                    break;
-            }
-            auto len = p - input.ptr;
-            lineBuffer.put(input[0 .. len]);
-            input = input[len .. $];
-
-            len = lineBuffer.length;
-            uchar c = void;
-            if (len >= 2 &&
-                ((c = lineBuffer[len - 2]) == '\\' ||
-                 (c == '\r' && len >= 3 && lineBuffer[len - 3] == '\\')))
-            {
-                if (c == '\r')
-                    lineBuffer.pop();
-                lineBuffer.pop();
-                lineBuffer.pop();
-            }
-            else
-                break;
-        }
-        ptext = lineBuffer[];
-
-        assert(lineBuffer.length == 0 || lineBuffer[lineBuffer.length - 1] == '\n');
-        //writefln("\t%d", loc.lineNumber);
     }
 
     /**********************
-     * Same as readLine(), but ESC.space and ESC.brk need to be encoded as 0xFX.
-     * This should be fine as raw binary data is only meaningful inside string or character literals,
-     * where 00 is already encoded.
+     * Same as readLine(), but ESC.space and ESC.brk need to be
+     * encoded as 0xFX.  This should be fine as raw binary data is
+     * only meaningful inside string or character literals, where 00
+     * is already encoded.
      */
     void readLineEsc()
     {
@@ -844,11 +801,10 @@ struct Source
                 break;
             }
             auto len = lineBuffer.length;
-            assert(len >= 5);                   // should be at least \xXXn
             uchar c = void;
-            if (
+            if (len >= 2 &&
                 ((c = lineBuffer[len - 2]) == '\\' ||
-                 (c == '\r' && lineBuffer[len - 3] == '\\')))
+                 (c == '\r' && len >= 3 && lineBuffer[len - 3] == '\\')))
             {
                 if (c == '\r')
                     lineBuffer.pop();
@@ -865,7 +821,6 @@ struct Source
         //writefln("\t%d", loc.lineNumber);
     }
 }
-
 
 /************************************** unit tests *************************/
 

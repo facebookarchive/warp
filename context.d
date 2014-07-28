@@ -172,7 +172,7 @@ struct Context(R)
                 // locate sources).
                 import std.file, std.format;
                 outrange.formattedWrite(
-                    "# 1 \"%1$s\"\n"
+                    //"# 1 \"%1$s\"\n" Written by pushFile
                     "# 1 \"%2$s//\"\n"
                     "# 1 \"<command-line>\"\n"
                     "# 1 \"%1$s\"\n",
@@ -187,6 +187,13 @@ struct Context(R)
         auto s = push();
         psourceFile = s;
         s.addFile(sf, system, pathIndex);
+
+        // insert a line directive for start-of-file
+        // linemarker decrements lineNumber when writing, so set to 2
+        Loc tmploc = s.loc;
+        tmploc.lineNumber = 2;
+        tmploc.linemarker(expanded.foutr);
+
         if (lastloc.srcFile)
             uselastloc = true;
         assert(s.ptext);

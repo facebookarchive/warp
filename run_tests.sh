@@ -42,6 +42,10 @@ pass() {
 
 cd tests
 
+printf 'import...'
+foo_count=`$warp --stdout import.c | fgrep -c 'int foo'`
+assert_eq $foo_count 1 && pass
+
 printf 'include_guard...'
 foo_count=`$warp --stdout include_guard.c | fgrep -c 'int foo'`
 assert_eq $foo_count 1 && pass

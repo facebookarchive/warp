@@ -23,12 +23,18 @@ import stringlit;
 import textbuf;
 import loc;
 
-enum : ubyte
-{
-    CONDguard,          // a possible #include guard
-    CONDendif,          // looking for #endif only
-    CONDif,             // looking for #else, #elif, or #endif
-    CONDtoendif,        // skipping over #else, #elif, looking for #endif
+/** Types of include directives. */
+enum IncludeType {
+  _import,
+  _include,
+  _include_next,
+}
+
+enum Cond {
+  _guard,          // a possible #include guard
+  _endif,          // looking for #endif only
+  _if,             // looking for #else, #elif, or #endif
+  _toendif,        // skipping over #else, #elif, looking for #endif
 }
 
 /*******************************
@@ -268,7 +274,7 @@ bool parseDirective(R)(ref R r)
 
     bool cond = void;
     bool linemarker = void;
-    bool includeNext;
+    auto includeType = IncludeType._include;
 
     switch (r.front)
     {
@@ -481,7 +487,7 @@ bool parseDirective(R)(ref R r)
 
                     cond = r.constantExpression();
 
-                    r.src.ifstack.put(CONDif);
+                    r.src.ifstack.put(Cond._if);
 
                     if (r.front != TOK.eol)
                         err_fatal("end of line expected after #if expression");
@@ -519,7 +525,7 @@ bool parseDirective(R)(ref R r)
                     //if (cond) writefln("ifdef %s", cast(string)m.name);
                     }
 
-                    r.src.ifstack.put(CONDif);
+                    r.src.ifstack.put(Cond._if);
                 Ldef:
                     r.popFront();
                     if (r.front != TOK.eol)
@@ -558,12 +564,12 @@ bool parseDirective(R)(ref R r)
                     auto m = Id.search(r.idbuf[]);
                     cond = !(m && m.flags & Id.IDmacro);
 
-                    auto cnd = CONDif;
+                    auto cnd = Cond._if;
                     if (cond && sf && !seenTokens && sf.includeGuard == null)
                     {
                         sf.includeGuard = r.idbuf[].dup;
                         sf.ifstacki = cast(int)r.src.ifstack.length();
-                        cnd = CONDguard;
+                        cnd = Cond._guard;
                     }
 
                     r.src.ifstack.put(cnd);
@@ -577,12 +583,13 @@ bool parseDirective(R)(ref R r)
                     r.popFront();
                     if (r.front != TOK.eol)
                         err_fatal("end of line expected after #else");
-                    if (r.src.ifstack.length == 0 || r.src.ifstack.last() == CONDendif)
+                    if (r.src.ifstack.length == 0 ||
+                        r.src.ifstack.last() == Cond._endif)
                         err_fatal("#else by itself");
                     else
                     {
                         r.src.ifstack.pop();
-                        r.src.ifstack.put(CONDendif);
+                        r.src.ifstack.put(Cond._endif);
                         r.skipFalseCond();
                     }
                     return true;
@@ -598,12 +605,13 @@ bool parseDirective(R)(ref R r)
                             break;
                         assert(r.front != TOK.eof);
                     }
-                    if (r.src.ifstack.length == 0 || r.src.ifstack.last() == CONDendif)
+                    if (r.src.ifstack.length == 0 ||
+                        r.src.ifstack.last() == Cond._endif)
                         err_fatal("#elif by itself");
                     else
                     {
                         r.src.ifstack.pop();
-                        r.src.ifstack.put(CONDtoendif);
+                        r.src.ifstack.put(Cond._toendif);
                         r.skipFalseCond();
                     }
                     return true;
@@ -617,7 +625,7 @@ bool parseDirective(R)(ref R r)
                     else
                     {
                         auto sf = r.src.currentSourceFile();
-                        if (r.src.ifstack.last() == CONDguard)
+                        if (r.src.ifstack.last() == Cond._guard)
                         {
                             if (sf &&
                                 sf.includeGuard != null &&
@@ -641,12 +649,15 @@ bool parseDirective(R)(ref R r)
                     return result;
                 }
 
+                case "import":
+                    includeType = IncludeType._import;
+                    goto case "include";
+
                 case "include_next":
-                    includeNext = true;
-                    goto Linclude;
+                    includeType = IncludeType._include_next;
+                    goto case "include";
 
                 case "include":
-                Linclude:
                 {
                     // Things to know about the file doing the #include'ing
                     string currentFile;         // file name
@@ -707,8 +718,8 @@ bool parseDirective(R)(ref R r)
                         err_fatal("end of line expected following #include");
                     r.src.unget();
                     r.src.push('\n');
-                    r.src.includeFile(includeNext, sysstring, cast(char[])s,
-                        currentFile, pathIndex, system);
+                    r.src.includeFile(includeType, sysstring, cast(char[])s,
+                                      currentFile, pathIndex, system);
                     stringbuf.free();
                     r.src.popFront();
                     r.src.expanded.on();
@@ -777,7 +788,6 @@ bool parseDirective(R)(ref R r)
             return false;
 
         case TOK.eof:
-        Leof:
             assert(0);          // lines should always end with TOK.eol
 
         default:
@@ -819,18 +829,18 @@ void skipFalseCond(R)(ref R r)
                     case "if":
                     case "ifdef":
                     case "ifndef":
-                        r.src.ifstack.put(CONDif);
+                        r.src.ifstack.put(Cond._if);
                         break;
 
                     case "elif":
                         final switch (r.src.ifstack.last())
                         {
-                            case CONDendif:
+                            case Cond._endif:
                                 err_fatal("#elif not following #if");
                                 break;
 
-                            case CONDif:
-                            case CONDguard:
+                            case Cond._if:
+                            case Cond._guard:
                                 if (starti == r.src.ifstack.length())
                                 {
                                     // Same code here as for #if
@@ -838,7 +848,7 @@ void skipFalseCond(R)(ref R r)
                                     auto cond = r.constantExpression();
 
                                     r.src.ifstack.pop();
-                                    r.src.ifstack.put(CONDif);
+                                    r.src.ifstack.put(Cond._if);
 
                                     if (r.front != TOK.eol)
                                         err_fatal("end of line expected following #elif expr");
@@ -852,7 +862,7 @@ void skipFalseCond(R)(ref R r)
                                 }
                                 break;
 
-                            case CONDtoendif:
+                            case Cond._toendif:
                                 break;
                         }
                         break;
@@ -860,12 +870,12 @@ void skipFalseCond(R)(ref R r)
                     case "else":
                         final switch (r.src.ifstack.last())
                         {
-                            case CONDendif:
+                            case Cond._endif:
                                 err_fatal("#else not following #if");
                                 break;
 
-                            case CONDif:
-                            case CONDguard:
+                            case Cond._if:
+                            case Cond._guard:
                                 if (starti == r.src.ifstack.length())
                                 {
                                     // Skip the rest of the line
@@ -879,7 +889,7 @@ void skipFalseCond(R)(ref R r)
                                 }
                                 break;
 
-                            case CONDtoendif:
+                            case Cond._toendif:
                                 break;
                         }
                         break;
@@ -938,7 +948,7 @@ void skipFalseCond(R)(ref R r)
 /*************************************
  * Process #include file
  * Input:
- *      includeNext     if it was #include_next
+ *      includeType     _import, _include, or _include_next
  *      sysstring       if <file>
  *      s               the filename string in a temp buffer
  *      currentFile     the file that is doing the #include
@@ -946,13 +956,13 @@ void skipFalseCond(R)(ref R r)
  *      system          the system status of the file doing the #include
  */
 
-void includeFile(R)(R ctx, bool includeNext, bool sysstring, const(char)[] s,
-        string currentFile, int pathIndex, Sys system)
+void includeFile(R)(R ctx, IncludeType includeType, bool sysstring,
+    const(char)[] s, string currentFile, int pathIndex, Sys system)
 {
-    //writefln("includeFile('%s')", s);
     s = strip(s);       // remove leading and trailing whitespace
 
-    auto sf = ctx.searchForFile(includeNext, sysstring, system, s, pathIndex, currentFile);
+    auto sf = ctx.searchForFile(includeType == IncludeType._include_next,
+        sysstring, system, s, pathIndex, currentFile);
     if (!sf)
     {
         err_fatal("#include file '%s' not found", s);
@@ -977,6 +987,11 @@ void includeFile(R)(R ctx, bool includeNext, bool sysstring, const(char)[] s,
     {
         writeStatus('O');
         return;
+    }
+
+    // Set once flag for files included with #import
+    if (includeType == IncludeType._import) {
+      sf.once = true;
     }
 
     // Check for #include guard

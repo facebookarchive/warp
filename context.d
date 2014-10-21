@@ -568,8 +568,6 @@ struct Context(R)
         if (!sf.cachedRead && doDeps && !(system & Sys.syspath))
             deps ~= sf.filename;
 
-        if (sysstring)
-            system |= Sys.angle;
         return sf;
     }
 }
@@ -851,7 +849,7 @@ version (unittest)
 
         context.expanded.finish();
         if (outbuf[] != result)
-            writefln("output = |%s|", outbuf[]);
+            writefln("output = |%s|", cast(string)(outbuf[]));
         assert(outbuf[] == result);
     }
 }
@@ -867,7 +865,8 @@ asd\\\r
 ff\r
 ",
 
-`# 2 "test.c"
+`# 1 "test.c"
+# 2 "test.c"
 asdf
 # 3 "test.c"
 asdff
@@ -879,7 +878,8 @@ unittest
     writeln("u2");
     Params params;
     params.defines ~= "abc=def";
-    testPreprocess(params, "+abc+\n", "# 1 \"test.c\"\n+def+\n");
+    testPreprocess(params, "+abc+\n",
+                   "# 1 \"test.c\"\n# 1 \"test.c\"\n+def+\n");
 }
 }
 
@@ -888,6 +888,7 @@ unittest
     writeln("u3");
     Params params;
     params.defines ~= "abc2(a)=def=a=*";
-    testPreprocess(params, "+abc2(3)+\n", "# 1 \"test.c\"\n+def=3=* +\n");
+    testPreprocess(params, "+abc2(3)+\n",
+                   "# 1 \"test.c\"\n# 1 \"test.c\"\n+def=3=* +\n");
 //    exit(0);
 }

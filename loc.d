@@ -62,6 +62,6 @@ struct Loc
     {
         //writefln("%s(%s) %s", fileName, lineNumber, system);
         if (srcFile)
-            f.writef("%s(%d) : ", fileName, lineNumber);
+            f.writef("%s:%d: ", fileName, lineNumber);
     }
 }

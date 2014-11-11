@@ -63,6 +63,14 @@ struct Context(R)
         int sourceimax;
     }
 
+    // Tracks where files are included from. The order is top-level file
+    // first, most deeply nested include last.
+    Loc[] includeTrace;
+
+    // If this is set to something other than the init value, loc() will return
+    // this value instead of what it would otherwise return.
+    Loc overriddenLoc;
+
     Loc lastloc;
     bool uselastloc;
 
@@ -90,6 +98,14 @@ struct Context(R)
         ifstack.initialize();
         expanded.initialize(&this);
         setContext();
+    }
+
+    /**************************************
+     * Causes loc() to the passed-in Loc instead of its normal return value.
+     */
+    void overrideLoc(Loc loc)
+    {
+        overriddenLoc = loc;
     }
 
     /**************************************
@@ -374,6 +390,8 @@ struct Context(R)
 
     Loc loc()
     {
+        if (overriddenLoc != overriddenLoc.init)
+            return overriddenLoc;
         auto csf = currentSourceFile();
         if (csf)
             return csf.loc;

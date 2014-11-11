@@ -42,6 +42,10 @@ pass() {
 
 cd tests
 
+printf 'comment_after_include...'
+err=`$warp --stdout comment_after_include.c 2>&1 > /dev/null`
+assert_equal "$err" "" && pass
+
 printf 'import...'
 foo_count=`$warp --stdout import.c | fgrep -c 'int foo'`
 assert_eq $foo_count 1 && pass
@@ -54,14 +58,22 @@ printf 'include_thrice...'
 foo_count=`$warp --stdout include_thrice.c | fgrep -c 'int foo'`
 assert_eq $foo_count 3 && pass
 
+printf 'missing_include...'
+err=`$warp --stdout include_nonexisting.c 2>&1 > /dev/null`
+assert_equal "$err" "include/include_doesnotexist.h:1: #include file 'doesnotexist.h' not found" && pass
+
 printf 'pragma_once...'
 foo_count=`$warp --stdout pragma_once.c | fgrep -c 'int foo'`
 assert_eq $foo_count 1 && pass
+
+printf 'space_after_include...'
+err=`$warp --stdout space_after_include.cpp 2>&1 > /dev/null`
+assert_equal "$err" "" && pass
 
 if [ $errors -eq 0 ]
 then
     echo "All tests passed"
 else
-    echo "$errors test failed"
+    echo "$errors tests failed"
     exit 1
 fi

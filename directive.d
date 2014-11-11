@@ -688,7 +688,6 @@ bool parseDirective(R)(ref R r)
                         r.src.popFront();
                         r.src.lexStringLiteral(stringbuf, '"', STR.f);
                         s = stringbuf[];
-                        r.popFront();
                     }
                     else if (r.src.front == '<')
                     {
@@ -696,7 +695,6 @@ bool parseDirective(R)(ref R r)
                         r.src.popFront();
                         r.src.lexStringLiteral(stringbuf, '>', STR.f);
                         s = stringbuf[];
-                        r.popFront();
                     }
                     else
                     {
@@ -710,12 +708,17 @@ bool parseDirective(R)(ref R r)
                         else
                             err_fatal("string expected");
                         s = r.getStringLiteral();
-                        r.popFront();
                     }
                     if (s.length == 0)
                         err_fatal("filename expected");
+
+                    r.src.includeTrace ~= r.src.loc();
+                    r.popFront();
                     if (r.front != TOK.eol)
-                        err_fatal("end of line expected following #include");
+                        err_fatal(
+                            "end of line expected following #include (got %s)",
+                            r.front);
+
                     r.src.unget();
                     r.src.push('\n');
                     r.src.includeFile(includeType, sysstring, cast(char[])s,
@@ -965,6 +968,11 @@ void includeFile(R)(R ctx, IncludeType includeType, bool sysstring,
         sysstring, system, s, pathIndex, currentFile);
     if (!sf)
     {
+        // We will have already read past the include directive, but we need
+        // to report the error as occurring at the include directive. So
+        // we override the location in ctx.
+        ctx.overrideLoc(ctx.includeTrace[$-1]);
+        ctx.includeTrace = ctx.includeTrace[0..$-1];
         err_fatal("#include file '%s' not found", s);
         return;
     }

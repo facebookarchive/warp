@@ -60,7 +60,9 @@ assert_eq $foo_count 3 && pass
 
 printf 'missing_include...'
 err=`$warp --stdout include_nonexisting.c 2>&1 > /dev/null`
-assert_equal "$err" "include/include_doesnotexist.h:1: #include file 'doesnotexist.h' not found" && pass
+assert_equal "$err" "In file included from include/include_nonexisting.h:1,
+                 from include_nonexisting.c:1:
+include/include_doesnotexist.h:1: #include file 'doesnotexist.h' not found" && pass
 
 printf 'pragma_once...'
 foo_count=`$warp --stdout pragma_once.c | fgrep -c 'int foo'`

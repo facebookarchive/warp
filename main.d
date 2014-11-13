@@ -80,6 +80,18 @@ else
         }
         catch (Exception e)
         {
+            auto printedFrom = false;
+            for (auto i = context.includeTrace.length; i > 0; ) {
+                auto loc = context.includeTrace[--i];
+                stderr.writef(
+                    "%s from %s:%u",
+                    printedFrom ? ",\n                " : "In file included",
+                    loc.fileName, loc.lineNumber);
+                printedFrom = true;
+            }
+            if (printedFrom) {
+                stderr.writeln(":");
+            }
             context.loc().write(&stderr);
             stderr.writeln(e.msg);
             exit(EXIT_FAILURE);

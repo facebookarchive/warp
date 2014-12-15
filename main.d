@@ -81,8 +81,10 @@ else
         catch (Exception e)
         {
             auto printedFrom = false;
-            for (auto i = context.includeTrace.length; i > 0; ) {
-                auto loc = context.includeTrace[--i];
+            for (auto trace = context.includeTrace();
+                 trace != null;
+                 trace = trace.rest) {
+                auto loc = trace.first;
                 stderr.writef(
                     "%s from %s:%u",
                     printedFrom ? ",\n                " : "In file included",

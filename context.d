@@ -63,12 +63,10 @@ struct Context(R)
         int sourceimax;
     }
 
-    // Tracks where files are included from. The order is top-level file
-    // first, most deeply nested include last.
-    Loc[] includeTrace;
+    // Used in the implementation of overrideIncludeTrace;
+    LocList* overriddenIncludeTrace;
 
-    // If this is set to something other than the init value, loc() will return
-    // this value instead of what it would otherwise return.
+    // Used in the implementation of overrideLoc().
     Loc overriddenLoc;
 
     Loc lastloc;
@@ -101,7 +99,34 @@ struct Context(R)
     }
 
     /**************************************
-     * Causes loc() to the passed-in Loc instead of its normal return value.
+     * Returns a LocList representing the #include directives leading up
+     * to the inclusion of the current source code. The first element of
+     * the list corresponds to the most deeply nested include directive.
+     * The return value of this function may be null, which represents
+     * the empty list.
+     */
+    LocList* includeTrace()
+    {
+        if (overriddenIncludeTrace != overriddenIncludeTrace.init) {
+            return overriddenIncludeTrace;
+        }
+        auto csf = currentSourceFile();
+        if (csf) return csf.includeTrace;
+        return null;
+    }
+
+    /**************************************
+     * When called with a non-null value, causes includeTrace() to return
+     * that value instead of its normal return value.
+     */
+    void overrideIncludeTrace(LocList* trace)
+    {
+        overriddenIncludeTrace = trace;
+    }
+
+    /**************************************
+     * When called with a value other than Loc.init, causes loc() to return
+     * that value instead of its normal return value.
      */
     void overrideLoc(Loc loc)
     {
@@ -173,7 +198,7 @@ struct Context(R)
         expanded.start(outrange);
 
         // Initialize source text
-        pushFile(sf, Sys.none, -1);
+        pushFile(sf, Sys.none, -1, null);
 
         version (unittest)
         {
@@ -197,10 +222,11 @@ struct Context(R)
         }
     }
 
-    void pushFile(SrcFile* sf, Sys system, int pathIndex)
+    void pushFile(SrcFile* sf, Sys system, int pathIndex, LocList* includeTrace)
     {
         //write("pushFile ", pathIndex);
         auto s = push();
+        s.includeTrace = includeTrace;
         psourceFile = s;
         s.addFile(sf, system, pathIndex);
 
@@ -700,6 +726,8 @@ struct SourceStack
 struct Source
 {
     Textbuf!(uchar,"src") lineBuffer = void;
+
+    LocList* includeTrace;
 
     uchar[] ptext;
 

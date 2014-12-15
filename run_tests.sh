@@ -60,7 +60,7 @@ assert_eq $foo_count 3 && pass
 
 printf 'missing_include...'
 err=`$warp --stdout include_nonexisting.c 2>&1 > /dev/null`
-assert_equal "$err" "In file included from include/include_nonexisting.h:1,
+assert_equal "$err" "In file included from include/include_nonexisting.h:2,
                  from include_nonexisting.c:1:
 include/include_doesnotexist.h:1: #include file 'doesnotexist.h' not found" && pass
 

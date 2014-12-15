@@ -712,7 +712,9 @@ bool parseDirective(R)(ref R r)
                     if (s.length == 0)
                         err_fatal("filename expected");
 
-                    r.src.includeTrace ~= r.src.loc();
+                    auto includeTrace = new LocList();
+                    includeTrace.first = r.src.loc();
+                    includeTrace.rest = r.src.includeTrace();
                     r.popFront();
                     if (r.front != TOK.eol)
                         err_fatal(
@@ -722,7 +724,9 @@ bool parseDirective(R)(ref R r)
                     r.src.unget();
                     r.src.push('\n');
                     r.src.includeFile(includeType, sysstring, cast(char[])s,
-                                      currentFile, pathIndex, system);
+                                      currentFile, pathIndex, system,
+                                      includeTrace);
+                    // r.src.includeTrace.length -= 1;
                     stringbuf.free();
                     r.src.popFront();
                     r.src.expanded.on();
@@ -957,10 +961,13 @@ void skipFalseCond(R)(ref R r)
  *      currentFile     the file that is doing the #include
  *      pathIndex       the path index of the file that is doing the #include
  *      system          the system status of the file doing the #include
+ *      includeTrace    trace of #include directive locations up to the
+ *                      one including this file
  */
 
 void includeFile(R)(R ctx, IncludeType includeType, bool sysstring,
-    const(char)[] s, string currentFile, int pathIndex, Sys system)
+                    const(char)[] s, string currentFile, int pathIndex,
+                    Sys system, LocList* includeTrace)
 {
     s = strip(s);       // remove leading and trailing whitespace
 
@@ -971,8 +978,8 @@ void includeFile(R)(R ctx, IncludeType includeType, bool sysstring,
         // We will have already read past the include directive, but we need
         // to report the error as occurring at the include directive. So
         // we override the location in ctx.
-        ctx.overrideLoc(ctx.includeTrace[$-1]);
-        ctx.includeTrace = ctx.includeTrace[0..$-1];
+        ctx.overrideLoc(includeTrace.first);
+        ctx.overrideIncludeTrace(includeTrace.rest);
         err_fatal("#include file '%s' not found", s);
         return;
     }
@@ -1015,5 +1022,5 @@ void includeFile(R)(R ctx, IncludeType includeType, bool sysstring,
 
     //writefln("found '%s', pathIndex = %s", sf.filename, pathIndex);
     writeStatus(sf.cachedRead ? 'C' : ' ');
-    ctx.pushFile(sf, system, pathIndex);
+    ctx.pushFile(sf, system, pathIndex, includeTrace);
 }

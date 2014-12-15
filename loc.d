@@ -65,3 +65,12 @@ struct Loc
             f.writef("%s:%d: ", fileName, lineNumber);
     }
 }
+
+/*************************************************
+ * Element of a linked list of locations.
+ */
+struct LocList
+{
+    Loc first;
+    LocList* rest;
+}

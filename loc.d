@@ -74,3 +74,10 @@ struct LocList
     Loc first;
     LocList* rest;
 }
+
+/*
+ * Local Variables:
+ * mode: d
+ * c-basic-offset: 4
+ * End:
+ */

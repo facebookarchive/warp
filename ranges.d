@@ -95,3 +95,10 @@ unittest
     ++i;
     assert(buf[0 .. i] == "ab");
 }
+
+/*
+ * Local Variables:
+ * mode: d
+ * c-basic-offset: 4
+ * End:
+ */

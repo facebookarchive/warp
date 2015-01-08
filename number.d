@@ -486,3 +486,10 @@ unittest
     s = s.skipFloat(bitbucket, false, false, true);
     assert(s.empty);
 }
+
+/*
+ * Local Variables:
+ * mode: d
+ * c-basic-offset: 4
+ * End:
+ */

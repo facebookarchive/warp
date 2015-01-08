@@ -131,3 +131,10 @@ ubyte isMultiTok(uchar c) pure nothrow
 {
     return cclassTable[c] & CClass.multiTok;
 }
+
+/*
+ * Local Variables:
+ * mode: d
+ * c-basic-offset: 4
+ * End:
+ */

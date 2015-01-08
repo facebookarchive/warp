@@ -762,3 +762,10 @@ unittest
 
 
 
+
+/*
+ * Local Variables:
+ * mode: d
+ * c-basic-offset: 4
+ * End:
+ */

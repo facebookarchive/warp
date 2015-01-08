@@ -202,3 +202,10 @@ struct Id
         return hash;
     }
 }
+
+/*
+ * Local Variables:
+ * mode: d
+ * c-basic-offset: 4
+ * End:
+ */

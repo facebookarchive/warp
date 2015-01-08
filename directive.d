@@ -1024,3 +1024,10 @@ void includeFile(R)(R ctx, IncludeType includeType, bool sysstring,
     writeStatus(sf.cachedRead ? 'C' : ' ');
     ctx.pushFile(sf, system, pathIndex, includeTrace);
 }
+
+/*
+ * Local Variables:
+ * mode: d
+ * c-basic-offset: 4
+ * End:
+ */

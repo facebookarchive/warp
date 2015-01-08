@@ -1678,3 +1678,10 @@ void textPrint(const(uchar)[] s)
     }
     writeln(']');
 }
+
+/*
+ * Local Variables:
+ * mode: d
+ * c-basic-offset: 4
+ * End:
+ */

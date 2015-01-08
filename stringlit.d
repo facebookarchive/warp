@@ -334,3 +334,10 @@ unittest
     assert(r.empty && n == 0x6162);
   }
 }
+
+/*
+ * Local Variables:
+ * mode: d
+ * c-basic-offset: 4
+ * End:
+ */

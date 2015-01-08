@@ -196,3 +196,10 @@ unittest
     assert(sysIndex == 4);
     assert(paths == [".","a","b","d","e","c","f"]);
 }
+
+/*
+ * Local Variables:
+ * mode: d
+ * c-basic-offset: 4
+ * End:
+ */

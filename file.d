@@ -215,3 +215,10 @@ void myReadFree(void[] buf)
 {
     free(buf.ptr - SPAD);
 }
+
+/*
+ * Local Variables:
+ * mode: d
+ * c-basic-offset: 4
+ * End:
+ */

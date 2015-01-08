@@ -576,3 +576,10 @@ unittest
     r2 = s2.skipBlankLine();
     assert(r2.empty);
 }
+
+/*
+ * Local Variables:
+ * mode: d
+ * c-basic-offset: 4
+ * End:
+ */

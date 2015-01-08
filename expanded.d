@@ -156,3 +156,10 @@ struct Expanded(R)
         lineBuffer.put(0);
     }
 }
+
+/*
+ * Local Variables:
+ * mode: d
+ * c-basic-offset: 4
+ * End:
+ */

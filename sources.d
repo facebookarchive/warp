@@ -207,3 +207,10 @@ void myBuildPath(R)(ref R buf, const(char)[] seg1, const(char)[] seg2)
         buf.put(c);
     }
 }
+
+/*
+ * Local Variables:
+ * mode: d
+ * c-basic-offset: 4
+ * End:
+ */

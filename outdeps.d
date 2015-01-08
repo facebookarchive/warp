@@ -92,3 +92,10 @@ void dependencyFileWrite(string filename, string[] deps)
     auto w = f.lockingTextWriter();
     dependencyFileFormat(w, deps);
 }
+
+/*
+ * Local Variables:
+ * mode: d
+ * c-basic-offset: 4
+ * End:
+ */

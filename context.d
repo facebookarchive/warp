@@ -938,3 +938,10 @@ unittest
                    "# 1 \"test.c\"\n# 1 \"test.c\"\n+def=3=* +\n");
 //    exit(0);
 }
+
+/*
+ * Local Variables:
+ * mode: d
+ * c-basic-offset: 4
+ * End:
+ */

@@ -180,3 +180,10 @@ int main(string[] args) {
 
   return execvp(options[0], options);
 }
+
+/*
+ * Local Variables:
+ * mode: d
+ * c-basic-offset: 4
+ * End:
+ */

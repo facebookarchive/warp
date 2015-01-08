@@ -1113,3 +1113,10 @@ unittest
     assert(lexer.front == TOK.eof);
   }
 }
+
+/*
+ * Local Variables:
+ * mode: d
+ * c-basic-offset: 4
+ * End:
+ */

@@ -175,3 +175,10 @@ unittest
     assert(textbuf.length == 0);
     textbuf.free();
 }
+
+/*
+ * Local Variables:
+ * mode: d
+ * c-basic-offset: 4
+ * End:
+ */

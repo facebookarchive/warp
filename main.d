@@ -121,3 +121,10 @@ void err_warning(T...)(Loc loc, T args)
     stderr.write("warning: ");
     stderr.writefln(args);
 }
+
+/*
+ * Local Variables:
+ * mode: d
+ * c-basic-offset: 4
+ * End:
+ */

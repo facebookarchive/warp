@@ -59,6 +59,7 @@ enum TOK
     mod,
     not,
     tilde,
+    dollar,
     lparen,
     rparen,
     defined,
@@ -406,6 +407,7 @@ struct Lexer(R) if (isInputRange!R)
                     front = TOK.or;
                     return;
 
+                case '$':    src.popFront(); front = TOK.dollar;    return;
                 case '(':    src.popFront(); front = TOK.lparen;    return;
                 case ')':    src.popFront(); front = TOK.rparen;    return;
                 case ',':    src.popFront(); front = TOK.comma;     return;
@@ -507,7 +509,6 @@ struct Lexer(R) if (isInputRange!R)
                     front = TOK.integer;
                     return;
 
-                case '$':
                 case '_':
                 case 'a': .. case 't':
                 case 'v': .. case 'z':
@@ -1034,7 +1035,9 @@ unittest
     assert(!lexer.empty);
     assert(lexer.front == TOK.identifier && lexer.idbuf[] == "abc");
     lexer.popFront();
-    assert(lexer.front == TOK.identifier && lexer.idbuf[] == "$def");
+    assert(lexer.front == TOK.dollar);
+    lexer.popFront();
+    assert(lexer.front == TOK.identifier && lexer.idbuf[] == "def");
     lexer.popFront();
     assert(lexer.front == TOK.identifier && lexer.idbuf[] == "_ehi");
     lexer.popFront();

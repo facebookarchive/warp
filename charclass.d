@@ -34,10 +34,10 @@ static this()
 {
     for (uint c = 0; c < 0x100; ++c)
     {
-        if (isAlpha(c) || c == '_' || c == '$')
+        if (isAlpha(c) || c == '_')
             cclassTable[c] |= CClass.identifierStart;
 
-        if (isAlphaNum(c) || c == '_' || c == '$')
+        if (isAlphaNum(c) || c == '_')
             cclassTable[c] |= CClass.identifierChar;
 
         if (c == ' ' ||
@@ -46,6 +46,7 @@ static this()
             c == '\v' ||
             c == '\f' ||
             c == '\r' ||
+            c == '$' ||
             c == '(' ||
             c == ')' ||
             c == ',' ||
@@ -88,7 +89,7 @@ unittest
      */
     for (uint u = 0; u < 0x100; ++u)
     {
-        assert(isIdentifierStart(cast(uchar)u) == (isAlpha(u) || u == '_' || u == '$'));
+        assert(isIdentifierStart(cast(uchar)u) == (isAlpha(u) || u == '_'));
     }
 }
 
@@ -108,7 +109,7 @@ unittest
      */
     for (uint u = 0; u < 0x100; ++u)
     {
-        assert((isIdentifierChar(cast(uchar)u) != 0) == (isAlphaNum(u) || u == '_' || u == '$'));
+        assert((isIdentifierChar(cast(uchar)u) != 0) == (isAlphaNum(u) || u == '_'));
     }
 }
 

@@ -46,6 +46,10 @@ printf 'comment_after_include...'
 err=`$warp --stdout comment_after_include.c 2>&1 > /dev/null`
 assert_equal "$err" "" && pass
 
+printf 'dollar_macro...'
+q_count=`$warp --stdout dollar_macro.S 2>&1 | egrep -c "[$]q"`
+assert_eq "$q_count" 1 && pass
+
 printf 'import...'
 foo_count=`$warp --stdout import.c | fgrep -c 'int foo'`
 assert_eq $foo_count 1 && pass

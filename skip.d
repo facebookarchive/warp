@@ -106,26 +106,72 @@ unittest
 
 R skipCComment(alias error = err_fatal, R)(R r) if (isInputRange!R)
 {
-outer:
-    for (;;)
+    static if (isContext!R)
     {
-        if (r.empty)
-            break;
+        // Take advantage of lookahead to speed up loop
+        while (!r.empty)
+        {
+            auto c = r.front;
+            if (c == '*')
+            {
+                r.popFront();
+                if (r.empty)
+                    break;
+                if (r.front == '/')
+                {
+                    r.popFront();
+                    return r;
+                }
+            }
+            else
+            {
+                auto a = r.lookAhead();
+                size_t n;
+                while (n + 1 < a.length)
+                {
+                    if (a[n] != '*' || a[n + 1] != '/')
+                        ++n;
+                    else
+                    {
+                        r.popFrontN(n + 2);
+                        if (!r.empty)
+                        {
+                            r.front;
+                            r.popFront();
+                        }
+                        return r;
+                    }
+                }
+                if (n)
+                    r.popFrontN(n);
+                else
+                    r.popFront();
+            }
+        }
+    }
+    else
+    {
+  outer:
         for (;;)
         {
-            if (r.front != '*')
-            {
-                // Short path
-                r.popFront();
-                break;
-            }
-            r.popFront();
             if (r.empty)
-                break outer;
-            if (r.front == '/')
+                break;
+            for (;;)
             {
+                if (r.front != '*')
+                {
+                    // Short path
+                    r.popFront();
+                    break;
+                }
                 r.popFront();
-                return r;
+                if (r.empty)
+                    break outer;
+                if (r.front == '/')
+                {
+                    r.popFront();
+                    return r;
+                }
             }
         }
     }

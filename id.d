@@ -24,7 +24,7 @@ import macros;
 
 struct Id
 {
-    enum buckets_length = 24_593UL;
+    enum buckets_length = 0x8000UL;
     __gshared Id*[] buckets;
 
     __gshared uint count;

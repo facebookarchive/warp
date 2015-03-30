@@ -12,7 +12,7 @@ import std.stdio;
 
 import context;
 import macros;
-import main;
+import util;
 import textbuf;
 
 /******************************************

@@ -10,7 +10,7 @@ module constexpr;
 
 import std.stdio;
 
-import main;
+import util;
 import lexer;
 import id;
 

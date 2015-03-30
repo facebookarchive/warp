@@ -16,7 +16,7 @@ import std.stdio;
 import std.traits;
 
 import lexer : ppint_t, ppuint_t;
-import main : err_fatal;
+import util : err_fatal;
 import ranges : BitBucket;
 
 /******************************

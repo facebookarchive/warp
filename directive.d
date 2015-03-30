@@ -16,7 +16,7 @@ import constexpr;
 import id;
 import lexer;
 import macros;
-import main;
+import util;
 import skip;
 import sources;
 import stringlit;

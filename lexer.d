@@ -17,7 +17,7 @@ import std.traits;
 import id;
 import loc;
 import macros;
-import main;
+import util;
 import number;
 import ranges;
 import skip;

@@ -18,7 +18,7 @@ import std.path;
 import std.stdio;
 import std.string;
 
-import main;
+import util;
 import textbuf;
 
 /*********************************

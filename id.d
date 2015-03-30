@@ -14,7 +14,7 @@ import core.stdc.stdlib;
 import core.stdc.time;
 import std.stdio;
 
-import main;
+import util;
 import macros;
 
 /******************************

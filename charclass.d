@@ -9,7 +9,7 @@ module charclass;
 
 import std.ascii;
 
-import main;
+import util;
 
 /*****************************************
  * Use an array lookup to determine what kind of character it is;

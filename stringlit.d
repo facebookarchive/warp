@@ -15,7 +15,7 @@ import std.traits;
 import std.utf;
 
 import lexer;
-import main;
+import util;
 import macros;
 import ranges;
 

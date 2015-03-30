@@ -16,10 +16,7 @@ import cmdline;
 import context;
 import loc;
 import sources;
-
-// Data type for C source code characters
-alias ubyte uchar;
-alias immutable(uchar)[] ustring;
+import util;
 
 extern (C) int isatty(int);
 
@@ -105,21 +102,6 @@ else
                                 // (it also prevents -profile from working)
         return EXIT_SUCCESS;
     }
-}
-
-
-void err_fatal(T...)(T args)
-{
-    auto app = appender!string();
-    app.formattedWrite(args);
-    throw new Exception(app.data);
-}
-
-void err_warning(T...)(Loc loc, T args)
-{
-    loc.write(&stderr);
-    stderr.write("warning: ");
-    stderr.writefln(args);
 }
 
 /*

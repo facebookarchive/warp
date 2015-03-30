@@ -16,7 +16,7 @@ import std.stdio;
 import core.stdc.stdio;
 
 import macros : ESC;
-import main : err_fatal;
+import util : err_fatal;
 import ranges;
 import context;
 import charclass;

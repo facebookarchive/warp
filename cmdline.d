@@ -8,7 +8,7 @@
 
 module cmdline;
 
-import main;
+import util;
 
 import std.stdio;
 import std.range;

@@ -26,7 +26,7 @@ import id;
 import lexer;
 import loc;
 import macros;
-import main;
+import util;
 import outdeps;
 import textbuf;
 import sources;

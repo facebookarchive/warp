@@ -1,3 +1,9 @@
+- - -
+
+**_This project is not actively maintained. Proceed at your own risk!_**
+
+- - -  
+
 `warp`: Facebook's C and C++ Preprocessor
 -----------------------------------------
 

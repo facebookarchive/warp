@@ -691,6 +691,7 @@ void macroExpandedText(Context, R)(Id* m, ustring[] args, ref R buffer)
             bool expand = true;
             bool trimleft = false;
             bool trimright = false;
+            bool cat = false;
 
         Lagain2:
             auto argi = m.text[++q];
@@ -802,6 +803,7 @@ void macroExpandedText(Context, R)(Id* m, ustring[] args, ref R buffer)
                             continue;
                         }
                     }
+                    cat = true;
                     break;
             }
         L1:
@@ -830,10 +832,10 @@ void macroExpandedText(Context, R)(Id* m, ustring[] args, ref R buffer)
                     auto s = expbuf[start .. expbuf.length];
                     auto t = trimEscWhiteSpace(s);
                     //writefln("\t\ttrim   '%s'", cast(string)t);
-                    if (t.length && isMultiTok(t[0]))
+                    if (!cat && t.length && isMultiTok(t[0]))
                         buffer.put(ESC.brk);
                     buffer.put(t);
-                    if (t.length && isMultiTok(t[t.length - 1]))
+                    if (!cat && t.length && isMultiTok(t[t.length - 1]))
                         buffer.put(ESC.brk);
 
                     auto b = expbuf[];
@@ -862,6 +864,21 @@ void macroExpandedText(Context, R)(Id* m, ustring[] args, ref R buffer)
     }
 }
 
+unittest
+{
+    uchar[512] tmpbuf = void;
+    auto buffer = Textbuf!(uchar,"test")(tmpbuf);
+
+    auto text = "a " ~ ESC.start ~ 1 ~ ESC.start ~ ESC.concat ~ "= b";
+    ustring[1] parameters = [cast(ustring)"+"];
+
+    auto m = Id.defineMacro(cast(ustring)"name", parameters[], cast(ustring)text, Id.IDmacro | Id.IDfunctionLike);
+
+    ustring[1] args = [cast(ustring)"+"];
+
+    macroExpandedText!(Context!(Textbuf!(uchar)))(m, args[], buffer);
+    assert(buffer[] == "a += b");
+}
 
 /*****************************************
  * Take string text, fully macro expand it, and write the result to outbuf.

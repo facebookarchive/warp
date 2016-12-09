@@ -922,16 +922,8 @@ void macroExpand(Context, R)(const(uchar)[] text, ref R outbuf)
                  * examining their insides
                  */
                 r.popFront();
-                if (outbuf.length && outbuf.last() == 'R')
-                {
-                    outbuf.put(c);
-                    r = r.skipRawStringLiteral(outbuf);
-                }
-                else
-                {
-                    outbuf.put(c);
-                    r = r.skipStringLiteral(outbuf);
-                }
+                outbuf.put(c);
+                r = r.skipStringLiteral(outbuf);
                 continue;
 
             case EXPAND.singlequote:

@@ -218,8 +218,8 @@ struct Context(R)
                 import std.file, std.format;
                 outrange.formattedWrite(
                     //"# 1 \"%1$s\"\n" Written by pushFile
-                    "# 1 \"%2$s//\"\n"
-                    "# 1 \"<command-line>\"\n"
+                    "# 1 \"%2$s//\"\n" ~
+                    "# 1 \"<command-line>\"\n" ~
                     "# 1 \"%1$s\"\n",
                     s.loc.srcFile.filename, getcwd);
             }

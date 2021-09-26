@@ -9,6 +9,7 @@
 import std.array;
 import std.format;
 import std.stdio;
+import std.file;
 import core.stdc.stdlib;
 import core.memory;
 
@@ -91,7 +92,7 @@ else
             if (printedFrom) {
                 stderr.writeln(":");
             }
-            context.loc().write(&stderr);
+            context.loc().write(&stderr());
             stderr.writeln(e.msg);
             exit(EXIT_FAILURE);
         }
@@ -100,7 +101,6 @@ else
 
         exit(EXIT_SUCCESS);     // this prevents the collector from running on exit
                                 // (it also prevents -profile from working)
-        return EXIT_SUCCESS;
     }
 }
 

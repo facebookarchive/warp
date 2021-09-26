@@ -17,7 +17,7 @@ void err_fatal(T...)(T args)
 
 void err_warning(T...)(Loc loc, T args)
 {
-    loc.write(&stderr);
+    loc.write(&stderr());
     stderr.write("warning: ");
     stderr.writefln(args);
 }

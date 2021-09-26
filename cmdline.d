@@ -46,7 +46,8 @@ Params parseCommandLine(string[] args)
 {
     import std.getopt;
 
-    if (args.length == 1)
+
+    void print_usage()
     {
         writeln(
 "C Preprocessor
@@ -64,6 +65,12 @@ Options:
 ");
         exit(EXIT_SUCCESS);
     }
+
+    if (args.length == 1)
+    {
+        print_usage();
+    }
+
 
     Params p;
 
@@ -93,6 +100,12 @@ Options:
 
     assert(args.length >= 1);
     p.sourceFilenames = args[1 .. $];
+
+    if (p.sourceFilenames.length == 1 && p.sourceFilenames[0] == "")
+    {
+        writeln("error: no input source files provided");
+        print_usage();
+    }
 
     if (p.outFilenames.length == 0)
     {

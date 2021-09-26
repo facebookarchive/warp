@@ -67,7 +67,7 @@ struct StaticArrayBuffer(E, size_t N)
  private:
     void detectedOverflow() {
       import util;
-      err_fatal("Buffer overflowed. Possibly caused by forgetting to "
+      err_fatal("Buffer overflowed. Possibly caused by forgetting to " ~
           "complete a git merge in your code.");
     }
 }

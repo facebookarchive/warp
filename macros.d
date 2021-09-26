@@ -326,16 +326,16 @@ unittest
 
     ubyte[6] d = cast(ubyte[])("" ~ ESC.space ~ " a " ~ ESC.space ~ " ");
     s = trimWhiteSpace(cast(uchar[])d);
-    assert(s == x"FD 61 FD");
+    assert(s == "\xFD\x61\xFD");
 
     ubyte[1] e = cast(ubyte[])("" ~ ESC.space ~ "");
     s = trimWhiteSpace(cast(uchar[])e);
-    assert(s == x"FD");
+    assert(s == "\xFD");
 
     ubyte[8] f = cast(ubyte[])("" ~ ESC.space ~ " ab " ~ ESC.space ~ "" ~ ESC.space ~ " ");
     s = trimWhiteSpace(cast(uchar[])f);
 //writefln("'%s', %s", s, s.length);
-    assert(s == x"FD 61 62 FD FD");
+    assert(s == "\xFD\x61\x62\xFD\xFD");
 
 }
 
@@ -873,7 +873,7 @@ void macroExpandedText(Context, R)(Id* m, ustring[] args, ref R buffer)
 private enum EXPAND : ubyte { none, doublequote, singlequote, expand, zero, dot, digit, idstart }
 private immutable EXPAND[256] expand;
 
-static this()
+shared static this()
 {
     // Initialize lookup table
     foreach (uint u; 0 .. 256)

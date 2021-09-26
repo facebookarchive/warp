@@ -178,7 +178,14 @@ int main(string[] args) {
     stderr.writeln(cmd);
   }
 
-  return execvp(options[0], options);
+  version (Windows)
+  {
+    auto pid = spawnProcess(options);
+    import core.stdc.stdlib : exit;
+    exit(wait(pid));
+  }
+  else
+    return execvp(options[0], options);
 }
 
 /*

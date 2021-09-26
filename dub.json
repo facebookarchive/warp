@@ -1,0 +1,42 @@
+{
+    "name": "warp",
+
+    "targetType": "executable",
+
+    "sourcePaths":
+    [
+        "."
+    ],
+    
+    "excludedSourceFiles":
+    [
+        "warpdrive.d"
+    ],
+
+    "subPackages": 
+    [
+        {
+            "name": "warpdrive",
+            "targetType": "executable",
+            "targetName": "warpdrive",
+            "sourceFiles":
+            [
+                "warpdrive.d",
+                "defines_clang3_2.d",
+                "defines_clang3_4.d",
+                "defines_clangdev.d",
+                "defines_clangxx3_2.d",
+                "defines_clangxx3_4.d",
+                "defines_clangxxdev.d",
+                "defines_gcc4_7_1.d",
+                "defines_gcc4_8_1.d",
+                "defines_gxx4_7_1.d",
+                "defines_gxx4_8_1.d",
+            ],
+            "versions":
+            [
+                "clangdev"
+            ]
+        }
+    ]
+}
